@@ -1,4 +1,4 @@
-import { EmployeeList } from '../components/EmployeeList';
+import { EmployeeList } from '@/components/EmployeeList';
 import { Plus } from 'lucide-react';
 
 interface EmployeesViewProps {

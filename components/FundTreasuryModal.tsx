@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { TOKEN_ADDRESS, TOKEN_ABI, PAYROLL_ABI } from '../config/contracts';
-import { useFhevm } from '../hooks/useFhevm';
+import { TOKEN_ADDRESS, TOKEN_ABI, PAYROLL_ABI } from '@/lib/contracts';
+import { useFhevm } from '@/hooks/useFhevm';
 import { Loader2, X, Wallet } from 'lucide-react';
 
 interface FundTreasuryModalProps {

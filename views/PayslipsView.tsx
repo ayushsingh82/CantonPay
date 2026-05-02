@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAccount, usePublicClient, useReadContract } from 'wagmi';
-import { NFT_ABI } from '../config/contracts';
+import { NFT_ABI } from '@/lib/contracts';
 import { Loader2, ExternalLink, FileText, Lock } from 'lucide-react';
 
 interface PayslipData {

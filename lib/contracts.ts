@@ -1,6 +1,8 @@
-// ── Contract Addresses (set via Vite env vars after deployment) ──
-export const FACTORY_ADDRESS = (import.meta.env.VITE_FACTORY_ADDRESS || '') as `0x${string}`;
-export const TOKEN_ADDRESS = (import.meta.env.VITE_TOKEN_ADDRESS || '') as `0x${string}`;
+// ── Contract Addresses (set via Next public env after deployment) ──
+export const FACTORY_ADDRESS = (process.env.NEXT_PUBLIC_FACTORY_ADDRESS ||
+  "") as `0x${string}`;
+export const TOKEN_ADDRESS = (process.env.NEXT_PUBLIC_TOKEN_ADDRESS ||
+  "") as `0x${string}`;
 export const FACTORY_DEPLOY_BLOCK = 10434411n;
 export const PAYROLL_DEPLOY_BLOCK = 10433478n;
 

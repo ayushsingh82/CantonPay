@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { ActionZone } from '../components/ActionZone';
-import { StatsBar } from '../components/StatsBar';
+import { ActionZone } from '@/components/ActionZone';
+import { StatsBar } from '@/components/StatsBar';
 import { Shield } from 'lucide-react';
 
 interface DashboardViewProps {

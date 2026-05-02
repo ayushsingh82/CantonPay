@@ -1,10 +1,10 @@
 import { useState, useCallback, useEffect } from 'react';
-import { PAYROLL_ABI, NFT_ABI } from '../config/contracts';
+import { PAYROLL_ABI, NFT_ABI } from '@/lib/contracts';
 import { useReadContract, usePublicClient } from 'wagmi';
-import { useFhevm } from '../hooks/useFhevm';
+import { useFhevm } from '@/hooks/useFhevm';
 import { CipherText } from './CipherText';
 import { Loader2, UserMinus, Lock, Edit3, DollarSign, Send, FileText, ExternalLink } from 'lucide-react';
-import { usePayroll } from '../hooks/usePayroll';
+import { usePayroll } from '@/hooks/usePayroll';
 
 interface EmployeeRowProps {
     address: string;

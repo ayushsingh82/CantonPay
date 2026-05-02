@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useToken } from '../hooks/useToken';
+import { useToken } from '@/hooks/useToken';
 import { CipherText } from './CipherText';
 import { Wallet, Eye, Lock, Send, Loader2 } from 'lucide-react';
 

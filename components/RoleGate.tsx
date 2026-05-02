@@ -1,4 +1,4 @@
-import { useWallet } from '../hooks/useWallet';
+import { useWallet } from '@/hooks/useWallet';
 
 interface RoleGateProps {
     children: React.ReactNode;

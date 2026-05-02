@@ -1,9 +1,9 @@
 import { useDisconnect } from 'wagmi';
-import { FACTORY_ADDRESS, TOKEN_ADDRESS } from '../config/contracts';
+import { FACTORY_ADDRESS, TOKEN_ADDRESS } from '@/lib/contracts';
 import { Copy, ExternalLink, LogOut, Wallet, Code, Calendar, ChevronRight } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useState, useMemo } from 'react';
-import { usePayroll } from '../hooks/usePayroll';
+import { usePayroll } from '@/hooks/usePayroll';
 import { format } from 'date-fns';
 
 interface SettingsViewProps {

@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt, useAccount } from 'wagmi';
-import { TOKEN_ABI, TOKEN_ADDRESS } from '../config/contracts';
+import { TOKEN_ABI, TOKEN_ADDRESS } from '@/lib/contracts';
 import { useFhevm } from './useFhevm';
 
 export function useToken() {

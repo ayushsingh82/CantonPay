@@ -17,7 +17,7 @@ export function useFaucet() {
             
             // Integrated faucet URL. In development hooks this might be http://localhost:3001/request,
             // but in the Docker Compose production setup it is proxied via /faucet/request
-            const faucetUrl = import.meta.env.VITE_FAUCET_URL || '/faucet/request';
+            const faucetUrl = process.env.NEXT_PUBLIC_FAUCET_URL || '/faucet/request';
             console.log(faucetUrl);
             const response = await fetch(faucetUrl, {
                 method: 'POST',

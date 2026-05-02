@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt, useAccount } from 'wagmi';
-import { PAYROLL_ABI } from '../config/contracts';
+import { PAYROLL_ABI } from '@/lib/contracts';
 import { useFhevm } from './useFhevm';
 
 export function usePayroll(contractAddress: `0x${string}`) {

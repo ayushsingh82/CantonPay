@@ -1,13 +1,17 @@
-import { createConfig, http } from 'wagmi';
-import { sepolia } from 'wagmi/chains';
-import { injected } from 'wagmi/connectors';
+import { createConfig, http } from "wagmi";
+import { sepolia } from "wagmi/chains";
+import { injected } from "wagmi/connectors";
+
+const sepoliaRpc =
+  process.env.NEXT_PUBLIC_INFURA_RPC_URL ||
+  "https://ethereum-sepolia-rpc.publicnode.com";
 
 export const config = createConfig({
-    chains: [sepolia],
-    connectors: [injected()],
-    transports: {
-        [sepolia.id]: http(import.meta.env.VITE_INFURA_RPC_URL),
-    },
+  chains: [sepolia],
+  connectors: [injected()],
+  transports: {
+    [sepolia.id]: http(sepoliaRpc),
+  },
 });
 
 export { sepolia };

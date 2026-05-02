@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { usePublicClient } from 'wagmi';
-import { TOKEN_ADDRESS } from '../config/contracts';
+import { TOKEN_ADDRESS } from '@/lib/contracts';
 import { parseAbiItem } from 'viem';
 
 export type HistoryEvent = {
