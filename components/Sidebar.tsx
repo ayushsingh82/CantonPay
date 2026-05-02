@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 interface SidebarProps {
     activeTab: string;
     onTabChange: (tab: string) => void;
@@ -76,12 +78,12 @@ const truncateParty = (id: string) =>
 export function Sidebar({ activeTab, onTabChange, partyId, onLogout, isEmployer }: SidebarProps) {
     return (
         <aside className="sidebar">
-            <div className="sidebar-logo">
+            <Link href="/" className="sidebar-logo" style={{ textDecoration: 'none', cursor: 'pointer' }}>
                 <h1>
                     CANTON<span>.</span>
                 </h1>
                 <div className="subtitle">Payroll · Daml</div>
-            </div>
+            </Link>
 
             <nav className="sidebar-nav">
                 {NAV_ITEMS.map(item => (

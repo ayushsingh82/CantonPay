@@ -83,10 +83,10 @@ export function CantonLanding() {
             <NavLink href="#stack">stack</NavLink>
           </div>
           <Link
-            href="#join"
+            href="/dashboard"
             className="btn-primary inline-flex items-center gap-2 font-mono font-semibold text-xs px-4 py-2 rounded-lg"
           >
-            launch
+            dashboard
             <span aria-hidden="true">→</span>
           </Link>
         </div>
@@ -134,13 +134,13 @@ export function CantonLanding() {
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-3 mb-20 animate-fade-up [animation-delay:360ms]">
-            <a
-              href="#join"
+            <Link
+              href="/dashboard"
               className="btn-primary inline-flex items-center gap-2 font-mono font-semibold text-sm px-7 py-3.5 rounded-full"
             >
-              open organization
+              open dashboard
               <span aria-hidden="true">→</span>
-            </a>
+            </Link>
             <a
               href="#how"
               className="btn-ghost inline-flex items-center gap-2 font-mono text-sm px-7 py-3.5 rounded-full"

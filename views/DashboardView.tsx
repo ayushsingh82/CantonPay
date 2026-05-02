@@ -64,6 +64,39 @@ export function DashboardView({
                 onFund={onFundTreasury}
             />
 
+            {isEmployer && (!isTreasuryRevealed || treasuryBalance === '0' || treasuryBalance === '0.00' || treasuryBalance === '0 USDC') && (
+                <div style={{
+                    margin: '16px 24px 0',
+                    padding: '12px 16px',
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px dashed var(--border-hairline)',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>
+                        Treasury is empty. Fund it to run payroll.
+                    </span>
+                    <button
+                        onClick={onFundTreasury}
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            color: 'var(--accent)',
+                            cursor: 'pointer',
+                            padding: 0,
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            textDecoration: 'underline'
+                        }}
+                    >
+                        Need tokens? → Fund treasury
+                    </button>
+                </div>
+            )}
+
             <div className="content-body" style={{ flex: 1, padding: '24px' }}>
                 <div className="info-card" style={{
                     background: 'rgba(52, 211, 153, 0.03)',
