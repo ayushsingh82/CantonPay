@@ -6,6 +6,8 @@ interface WalletState {
     disconnect: () => void;
 }
 
+'use client';
+
 interface SidebarProps {
     activeTab: string;
     onTabChange: (tab: string) => void;
@@ -81,9 +83,9 @@ export function Sidebar({ activeTab, onTabChange, wallet, isEmployer }: SidebarP
         <aside className="sidebar">
             <div className="sidebar-logo">
                 <h1>
-                    NZUZO<span>.</span>
+                    CANTON<span>.</span>
                 </h1>
-                <div className="subtitle">Confidential Payroll</div>
+                <div className="subtitle">Payroll · Confidential</div>
             </div>
 
             <nav className="sidebar-nav">
@@ -114,7 +116,7 @@ export function Sidebar({ activeTab, onTabChange, wallet, isEmployer }: SidebarP
                     <>
                         <div className="network-badge" style={{ marginBottom: '8px' }}>
                             <div className="network-dot" />
-                            Sepolia Testnet
+                            Sepolia · Dev stack
                         </div>
                         <button
                             className="nav-item"

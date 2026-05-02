@@ -1,3 +1,5 @@
+'use client';
+
 import { useState } from 'react';
 import { useToken } from '@/hooks/useToken';
 import { Send, Loader2, X, AlertTriangle, CheckCircle } from 'lucide-react';

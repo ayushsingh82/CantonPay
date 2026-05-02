@@ -1,3 +1,5 @@
+'use client';
+
 import { EmployeeRow } from './EmployeeRow';
 
 export interface Employee {

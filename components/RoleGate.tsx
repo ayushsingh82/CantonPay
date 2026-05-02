@@ -1,5 +1,7 @@
 import { useWallet } from '@/hooks/useWallet';
 
+'use client';
+
 interface RoleGateProps {
     children: React.ReactNode;
 }
@@ -13,9 +15,9 @@ export function RoleGate({ children }: RoleGateProps) {
         <div className="role-gate">
             <div className="role-gate-card">
                 <div className="role-gate-logo">
-                    NZUZO<span>.</span>
+                    CANTON<span>.</span>
                 </div>
-                <p className="role-gate-subtitle">Confidential Payroll on Ethereum Sepolia</p>
+                <p className="role-gate-subtitle">Payroll on Ethereum Sepolia (dev) · Canton target</p>
                 <p className="role-gate-desc">
                     Connect your employer or employee wallet to access the dashboard.
                     All salary data is encrypted end-to-end using TFHE.

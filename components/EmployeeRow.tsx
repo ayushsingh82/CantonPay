@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useCallback, useEffect } from 'react';
 import { PAYROLL_ABI, NFT_ABI } from '@/lib/contracts';
 import { useReadContract, usePublicClient } from 'wagmi';

@@ -54,7 +54,12 @@
 }
 
 html,
-body,
+body {
+  min-height: 100%;
+  width: 100%;
+}
+
+/* Vite #root → Next uses body; dashboard locks scroll on inner layout */
 #root {
   height: 100%;
   width: 100%;
@@ -63,7 +68,6 @@ body,
 
 body {
   font-family: var(--font-sans);
-  background: var(--bg-root);
   color: var(--text-primary);
   font-size: 14px;
   line-height: 1.5;
@@ -110,12 +114,17 @@ body {
   }
 }
 
-/* ── App Layout ───────────────────────────────────────────────── */
+/* ── App Layout (Nzuzo structure + AgentCorn background) ─────── */
 .app-layout {
   display: flex;
   height: 100vh;
   position: relative;
   z-index: 1;
+  background: var(--bg-root);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(73, 136, 196, 0.08), transparent 55%),
+    radial-gradient(ellipse 50% 40% at 100% 100%, rgba(28, 77, 141, 0.06), transparent 55%),
+    radial-gradient(ellipse 50% 40% at 0% 100%, rgba(15, 40, 84, 0.12), transparent 55%);
 }
 
 /* ── Sidebar ──────────────────────────────────────────────────── */

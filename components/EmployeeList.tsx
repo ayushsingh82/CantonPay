@@ -1,3 +1,5 @@
+'use client';
+
 import { EmployeeTable } from './EmployeeTable';
 
 interface EmployeeListProps {

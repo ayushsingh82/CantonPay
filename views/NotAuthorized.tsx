@@ -1,13 +1,13 @@
-import { Lock, Home } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+"use client";
+
+import { Lock, Home } from "lucide-react";
+import Link from "next/link";
 
 interface NotAuthorizedProps {
     message?: string;
 }
 
 export function NotAuthorized({ message = "You are not part of this organization" }: NotAuthorizedProps) {
-    const navigate = useNavigate();
-
     return (
         <div style={{
             height: '100vh',
@@ -40,14 +40,14 @@ export function NotAuthorized({ message = "You are not part of this organization
                 {message}
             </p>
 
-            <button
-                onClick={() => navigate('/')}
+            <Link
+                href="/"
                 className="send-action-btn"
-                style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-hairline)', color: 'var(--text-primary)' }}
+                style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-hairline)', color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center' }}
             >
                 <Home size={16} style={{ marginRight: '8px' }} />
                 Back to Home
-            </button>
+            </Link>
         </div>
     );
 }

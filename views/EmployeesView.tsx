@@ -1,3 +1,5 @@
+'use client';
+
 import { EmployeeList } from '@/components/EmployeeList';
 import { Plus } from 'lucide-react';
 

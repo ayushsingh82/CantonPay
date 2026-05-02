@@ -1,3 +1,5 @@
+'use client';
+
 import { useState } from 'react';
 import { ActionZone } from '@/components/ActionZone';
 import { StatsBar } from '@/components/StatsBar';

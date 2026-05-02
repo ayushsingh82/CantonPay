@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { TOKEN_ADDRESS, TOKEN_ABI, PAYROLL_ABI } from '@/lib/contracts';

@@ -1,3 +1,5 @@
+'use client';
+
 interface ActionZoneProps {
     onRunPayroll: () => void;
     onAddEmployee: () => void;

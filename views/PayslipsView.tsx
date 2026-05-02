@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useState } from 'react';
 import { useAccount, usePublicClient, useReadContract } from 'wagmi';
 import { NFT_ABI } from '@/lib/contracts';

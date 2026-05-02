@@ -1,3 +1,5 @@
+'use client';
+
 import { useTransactionHistory, HistoryEvent } from '@/hooks/useTransactionHistory';
 import { RefreshCw, ExternalLink, ArrowRightLeft, UserPlus, UserMinus, Play, Loader2 } from 'lucide-react';
 

@@ -1,3 +1,5 @@
+'use client';
+
 import { useDisconnect } from 'wagmi';
 import { FACTORY_ADDRESS, TOKEN_ADDRESS } from '@/lib/contracts';
 import { Copy, ExternalLink, LogOut, Wallet, Code, Calendar, ChevronRight } from 'lucide-react';
@@ -262,7 +264,7 @@ export function SettingsView({ address, role, contractAddress }: SettingsViewPro
                         </div>
 
                         {[
-                            { label: 'Nzuzo Org', address: contractAddress },
+                            { label: 'Payroll org', address: contractAddress },
                             { label: 'Factory', address: FACTORY_ADDRESS },
                             { label: 'mUSDC', address: TOKEN_ADDRESS }
                         ].map((contract) => (

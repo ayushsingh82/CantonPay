@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useCallback } from 'react';
 import { useToken } from '@/hooks/useToken';
 import { CipherText } from './CipherText';
