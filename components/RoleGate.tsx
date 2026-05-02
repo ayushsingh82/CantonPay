@@ -1,50 +1,78 @@
-import { useWallet } from '@/hooks/useWallet';
+"use client";
 
-'use client';
+import { useCantonAuth } from "@/contexts/canton-auth";
+import { Loader2 } from "lucide-react";
+import { useState } from "react";
 
 interface RoleGateProps {
-    children: React.ReactNode;
+  children: React.ReactNode;
 }
 
 export function RoleGate({ children }: RoleGateProps) {
-    const { isConnected, isConnecting, connect, chain, switchChain } = useWallet();
+  const { partyId, login } = useCantonAuth();
+  const [hint, setHint] = useState("Employer");
+  const [busy, setBusy] = useState(false);
 
-    if (isConnected && chain?.id === 11155111) return <>{children}</>;
+  if (partyId) return <>{children}</>;
 
-    return (
-        <div className="role-gate">
-            <div className="role-gate-card">
-                <div className="role-gate-logo">
-                    CANTON<span>.</span>
-                </div>
-                <p className="role-gate-subtitle">Payroll on Ethereum Sepolia (dev) · Canton target</p>
-                <p className="role-gate-desc">
-                    Connect your employer or employee wallet to access the dashboard.
-                    All salary data is encrypted end-to-end using TFHE.
-                </p>
-                <button
-                    className="btn btn-primary"
-                    onClick={isConnected ? switchChain : connect}
-                    disabled={isConnecting}
-                    style={{ width: '100%', justifyContent: 'center', fontSize: '14px', padding: '12px 24px' }}
-                >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        {isConnected ? (
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                        ) : (
-                            <>
-                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                                <path d="m7 11 0-4a5 5 0 0 1 10 0l0 4" />
-                            </>
-                        )}
-                    </svg>
-                    {isConnecting ? 'Processing...' : isConnected ? 'Switch to Sepolia' : 'Connect Wallet'}
-                </button>
-                <div className="network-badge" style={{ justifyContent: 'center', marginTop: '16px' }}>
-                    <div className="network-dot" />
-                    Sepolia Testnet · FHE-powered
-                </div>
-            </div>
+  return (
+    <div className="role-gate">
+      <div className="role-gate-card">
+        <div className="role-gate-logo">
+          CANTON<span>.</span>
         </div>
-    );
+        <p className="role-gate-subtitle">
+          Canton Ledger · party login (JSON API)
+        </p>
+        <p className="role-gate-desc">
+          Allocate or reconnect a Daml party via the sandbox JSON API. Salary
+          visibility follows Daml observers — not FHEVM or zk proofs on EVM.
+        </p>
+        <label className="form-label" style={{ marginBottom: 8, display: "block" }}>
+          Party hint
+        </label>
+        <input
+          className="input-field"
+          value={hint}
+          onChange={(e) => setHint(e.target.value)}
+          placeholder="Employer / Employee / Operator"
+        />
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={async () => {
+            setBusy(true);
+            try {
+              await login(hint.trim() || "Employer");
+            } finally {
+              setBusy(false);
+            }
+          }}
+          disabled={busy}
+          style={{
+            width: "100%",
+            justifyContent: "center",
+            fontSize: "14px",
+            padding: "12px 24px",
+            marginTop: 16,
+          }}
+        >
+          {busy ? (
+            <>
+              <Loader2 className="inline h-4 w-4 animate-spin" /> Connecting…
+            </>
+          ) : (
+            "Connect party"
+          )}
+        </button>
+        <div
+          className="network-badge"
+          style={{ justifyContent: "center", marginTop: "16px" }}
+        >
+          <div className="network-dot" />
+          Canton JSON API · Daml parties
+        </div>
+      </div>
+    </div>
+  );
 }

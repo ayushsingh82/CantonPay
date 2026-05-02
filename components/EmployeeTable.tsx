@@ -1,85 +1,128 @@
-'use client';
+"use client";
 
-import { EmployeeRow } from './EmployeeRow';
-
-export interface Employee {
-    address: string;
-    salary: string;          // formatted display value or 'ENCRYPTED'
-    accessLevel: string;
-    status: 'active' | 'pending' | 'inactive';
-}
+import type { EmploymentContractPayload } from "@/lib/payroll-types";
 
 interface EmployeeTableProps {
-    addresses: string[];
-    isEmployer: boolean;
-    isLoading: boolean;
-    onFire: (address: string) => void;
-    walletAddress: string;
-    contractAddress: string;
-    nftAddress?: `0x${string}`;
+  employmentRows: { cid: string; payload: EmploymentContractPayload }[];
+  addresses: string[];
+  isEmployer: boolean;
+  isLoading: boolean;
+  onFire: (employmentCid: string) => void;
+  walletAddress: string;
+  contractAddress: string;
 }
 
 export function EmployeeTable({
-    addresses,
-    isEmployer,
-    isLoading,
-    onFire,
-    walletAddress,
-    contractAddress,
-    nftAddress
+  employmentRows,
+  addresses,
+  isEmployer,
+  isLoading,
+  onFire,
+  walletAddress,
+  contractAddress,
 }: EmployeeTableProps) {
-    if (isLoading) {
-        return (
-            <div className="table-container">
-                <div className="table-header-bar">
-                    <span className="table-title">Employee Roster</span>
-                    <span className="table-count">Loading...</span>
-                </div>
-                <div style={{ padding: '48px 24px', textAlign: 'center', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)', fontSize: '12px' }}>
-                    Fetching on-chain data...
-                </div>
-            </div>
-        );
-    }
-
+  if (isLoading) {
     return (
-        <div className="table-container">
-            <div className="table-header-bar">
-                <span className="table-title">Employee Roster</span>
-                <span className="table-count">{addresses.length} records</span>
-            </div>
-            <table className="employee-table">
-                <thead>
-                    <tr>
-                        <th>Address</th>
-                        <th>Salary (mUSDC)</th>
-                        <th>Access Level</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {addresses.map(addr => (
-                        <EmployeeRow
-                            key={addr}
-                            address={addr}
-                            isEmployer={isEmployer}
-                            onRemove={onFire}
-                            walletAddress={walletAddress}
-                            contractAddress={contractAddress}
-                            nftAddress={nftAddress}
-                        />
-                    ))}
-
-                    {addresses.length === 0 && (
-                        <tr>
-                            <td colSpan={5} style={{ textAlign: 'center', padding: '40px 24px', color: 'var(--text-tertiary)' }}>
-                                {isEmployer ? 'No employees registered yet. Click "Add Employee" to get started.' : 'You are not registered as an employee in this payroll contract.'}
-                            </td>
-                        </tr>
-                    )}
-                </tbody>
-            </table>
+      <div className="table-container">
+        <div className="table-header-bar">
+          <span className="table-title">Employee roster</span>
+          <span className="table-count">Loading…</span>
         </div>
+        <div
+          style={{
+            padding: "48px 24px",
+            textAlign: "center",
+            color: "var(--text-tertiary)",
+            fontFamily: "var(--font-mono)",
+            fontSize: "12px",
+          }}
+        >
+          Fetching Canton contracts…
+        </div>
+      </div>
     );
+  }
+
+  const rows =
+    employmentRows.length > 0
+      ? employmentRows
+      : addresses.map((a) => ({
+          cid: "",
+          payload: {
+            payrollOrgCid: contractAddress,
+            employer: "",
+            operator: "",
+            employee: a,
+            salary: "—",
+            currency: "",
+            orgLabel: "",
+          },
+        }));
+
+  return (
+    <div className="table-container">
+      <div className="table-header-bar">
+        <span className="table-title">Employee roster</span>
+        <span className="table-count">{rows.length} records</span>
+      </div>
+      <table className="employee-table">
+        <thead>
+          <tr>
+            <th>Party</th>
+            <th>Salary</th>
+            <th>Currency</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.cid || row.payload.employee}>
+              <td className="address-cell">
+                <span className="mono">{row.payload.employee}</span>
+              </td>
+              <td>{row.payload.salary}</td>
+              <td>{row.payload.currency || "—"}</td>
+              <td>
+                <span className="status-badge active">
+                  <span className="status-dot" />
+                  active
+                </span>
+              </td>
+              <td>
+                {isEmployer && row.cid ? (
+                  <button
+                    type="button"
+                    className="table-action-btn fire-btn"
+                    onClick={() => onFire(row.cid)}
+                  >
+                    Remove
+                  </button>
+                ) : (
+                  "—"
+                )}
+              </td>
+            </tr>
+          ))}
+
+          {rows.length === 0 && (
+            <tr>
+              <td
+                colSpan={5}
+                style={{
+                  textAlign: "center",
+                  padding: "40px 24px",
+                  color: "var(--text-tertiary)",
+                }}
+              >
+                {isEmployer
+                  ? "No employees yet. Use Add employee."
+                  : "No employment line for your party on this org."}
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
 }

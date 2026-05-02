@@ -18,13 +18,9 @@ interface DashboardViewProps {
     onAddEmployee: () => void;
     onFundTreasury: () => void;
     isPayrollRunning: boolean;
-    contractAddress: `0x${string}`;
+    contractAddress: string;
     payrollCooldown?: bigint;
     lastPayrollRun?: bigint;
-    faucetRequest: (address: string) => void;
-    isFaucetLoading: boolean;
-    faucetStatus: 'idle' | 'success' | 'error';
-    faucetMessage: string;
 }
 
 export function DashboardView({
@@ -43,10 +39,6 @@ export function DashboardView({
     contractAddress,
     payrollCooldown,
     lastPayrollRun,
-    faucetRequest,
-    isFaucetLoading,
-    faucetStatus,
-    faucetMessage,
 }: DashboardViewProps) {
     const [copied, setCopied] = useState(false);
 
@@ -71,40 +63,6 @@ export function DashboardView({
                 isEmployer={isEmployer}
                 onFund={onFundTreasury}
             />
-
-            {isEmployer && (!isTreasuryRevealed || treasuryBalance === '0 USDC') && (
-                <div style={{
-                    margin: '16px 24px 0',
-                    padding: '12px 16px',
-                    background: 'rgba(255, 255, 255, 0.03)',
-                    border: '1px border-dashed var(--border-hairline)',
-                    borderRadius: '8px',
-                    fontSize: '13px',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>
-                        Treasury is empty. Fund it to run payroll.
-                    </span>
-                    <button
-                        onClick={() => faucetRequest(window.ethereum?.selectedAddress || '')}
-                        disabled={isFaucetLoading}
-                        style={{
-                            background: 'none',
-                            border: 'none',
-                            color: 'var(--accent)',
-                            cursor: 'pointer',
-                            padding: 0,
-                            fontSize: '13px',
-                            fontWeight: 600,
-                            textDecoration: 'underline'
-                        }}
-                    >
-                            {isFaucetLoading ? 'Minting...' : faucetStatus === 'success' ? '✅ Minted' : 'Need mUSDC? → Mint tokens'}
-                    </button>
-                </div>
-            )}
 
             <div className="content-body" style={{ flex: 1, padding: '24px' }}>
                 <div className="info-card" style={{
@@ -131,10 +89,10 @@ export function DashboardView({
                         <Shield size={24} />
                     </div>
                     <div>
-                        <h3 style={{ margin: 0, fontSize: '16px', color: 'var(--text-primary)' }}>Privacy-Enabled Payroll</h3>
+                        <h3 style={{ margin: 0, fontSize: '16px', color: 'var(--text-primary)' }}>Canton payroll</h3>
                         <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                            Your financial data is protected by Fully Homomorphic Encryption. Only authorized parties can reveal
-                            sensitive details after multi-party validation on the Zama Sepolia network.
+                            Visibility follows Daml signatories and observers on the Canton ledger — not FHEVM or zk rollups on Ethereum.
+                            Salary fields are plain Decimal in templates; privacy is party-based.
                         </p>
                     </div>
                 </div>
@@ -151,7 +109,7 @@ export function DashboardView({
                     }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
-                                <h3 style={{ margin: 0, fontSize: '14px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Organization Address</h3>
+                                <h3 style={{ margin: 0, fontSize: '14px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>PayrollOrganization contract id</h3>
                                 <div style={{ marginTop: '8px', fontSize: '18px', fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-primary)' }}>
                                     {shortAddress}
                                 </div>
@@ -160,16 +118,10 @@ export function DashboardView({
                                 <button className="reveal-btn" onClick={handleCopy} style={{ minWidth: '80px' }}>
                                     {copied ? 'Copied!' : 'Copy'}
                                 </button>
-                                <a
-                                    href={`https://sepolia.etherscan.io/address/${contractAddress}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="reveal-btn"
-                                    style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}
-                                >
-                                    Etherscan
+                                <span className="reveal-btn" style={{ opacity: 0.6, cursor: 'default' }}>
+                                    Canton JSON API
                                     <Shield size={14} />
-                                </a>
+                                </span>
                             </div>
                         </div>
                     </div>

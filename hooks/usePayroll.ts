@@ -1,252 +1,264 @@
-import { useState, useCallback, useEffect } from 'react';
-import { useReadContract, useWriteContract, useWaitForTransactionReceipt, useAccount } from 'wagmi';
-import { PAYROLL_ABI } from '@/lib/contracts';
-import { useFhevm } from './useFhevm';
+"use client";
 
-export function usePayroll(contractAddress: `0x${string}`) {
-  const { address } = useAccount();
-  const { encrypt64 } = useFhevm();
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  createContract,
+  exerciseChoice,
+  fetchContract,
+  queryContracts,
+  allocateParty,
+} from "@/lib/canton-client";
+import type {
+  EmploymentContractPayload,
+  PayrollOrganizationPayload,
+} from "@/lib/payroll-types";
+import { useCantonAuth } from "@/contexts/canton-auth";
 
-  // ── Read employer address ──
-  const { data: employer } = useReadContract({
-    address: contractAddress,
-    abi: PAYROLL_ABI,
-    functionName: 'employer',
-    query: { enabled: !!contractAddress },
-  });
+function hasJsonApi(): boolean {
+  return Boolean(process.env.NEXT_PUBLIC_CANTON_JSON_API_URL);
+}
 
-  // ── Read full employee list from chain ──
-  const {
-    data: employeeAddresses,
-    isLoading: isLoadingEmployees,
-    refetch: refetchEmployees,
-  } = useReadContract({
-    address: contractAddress,
-    abi: PAYROLL_ABI,
-    functionName: 'getEmployees',
-    query: { enabled: !!contractAddress },
-  });
+function parseRunUnix(iso: string): bigint {
+  if (!iso) return 0n;
+  const t = Date.parse(iso);
+  return BigInt(Number.isFinite(t) ? Math.floor(t / 1000) : 0);
+}
 
-  // ── Read token address ──
-  const { data: tokenAddress } = useReadContract({
-    address: contractAddress,
-    abi: PAYROLL_ABI,
-    functionName: 'token',
-    query: { enabled: !!contractAddress },
-  });
+/** Canton Ledger JSON API + Daml `Payroll` module (no wagmi / no FHEVM). */
+export function usePayroll(orgContractId: string) {
+  const { partyId, token } = useCantonAuth();
 
-  // ── Read NFT address ──
-  const { data: nftAddress } = useReadContract({
-    address: contractAddress,
-    abi: PAYROLL_ABI,
-    functionName: 'nft',
-    query: { enabled: !!contractAddress },
-  });
+  const [org, setOrg] = useState<{
+    cid: string;
+    payload: PayrollOrganizationPayload;
+  } | null>(null);
+  const [employees, setEmployees] = useState<
+    { cid: string; payload: EmploymentContractPayload }[]
+  >([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+  const [lastTxSummary, setLastTxSummary] = useState<string | null>(null);
 
-  // ── Read Treasury Handle ──
-  const { data: treasuryHandle, refetch: refetchTreasury } = useReadContract({
-    address: contractAddress,
-    abi: PAYROLL_ABI,
-    functionName: 'getTreasuryHandle',
-    account: address,
-    query: { enabled: !!contractAddress && !!address },
-  });
-
-  // ── Read Payroll Cooldown ──
-  const { data: payrollCooldown, refetch: refetchCooldown } = useReadContract({
-    address: contractAddress,
-    abi: PAYROLL_ABI,
-    functionName: 'payrollCooldown',
-    query: { enabled: !!contractAddress },
-  });
-
-  // ── Read Last Payroll Run ──
-  const { data: lastPayrollRun, refetch: refetchLastRun } = useReadContract({
-    address: contractAddress,
-    abi: PAYROLL_ABI,
-    functionName: 'lastPayrollRun',
-    query: { enabled: !!contractAddress },
-  });
-
-  // ── Write contract ──
-  const { writeContractAsync, data: txHash, isPending: isTxPending } = useWriteContract();
-
-  // ── Wait for tx receipt ──
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash: txHash,
-  });
-
-  // ── Auto-refetch after transaction confirmation ──
-  useEffect(() => {
-    if (isConfirmed) {
-      refetchEmployees();
+  const refresh = useCallback(async () => {
+    if (!token || !orgContractId || !hasJsonApi()) {
+      setOrg(null);
+      setEmployees([]);
+      setLoading(false);
+      return;
     }
-  }, [isConfirmed, refetchEmployees]);
+    setLoading(true);
+    setError(null);
+    try {
+      const allEmp = await queryContracts<EmploymentContractPayload>(
+        "EmploymentContract",
+        token,
+      );
+      const forOrg = allEmp.filter(
+        (c) => c.payload.payrollOrgCid === orgContractId,
+      );
+      setEmployees(forOrg);
 
-  // ── Run Payroll ──
-  const runPayroll = useCallback(async (): Promise<string> => {
-    const hash = await writeContractAsync({
-      address: contractAddress,
-      abi: PAYROLL_ABI,
-      functionName: 'runPayroll',
-    });
-    return hash;
-  }, [writeContractAsync, contractAddress]);
+      const o = await fetchContract<PayrollOrganizationPayload>(
+        "PayrollOrganization",
+        orgContractId,
+        token,
+      );
+      if (o) {
+        setOrg({ cid: o.contractId, payload: o.payload });
+      } else {
+        setOrg(null);
+        if (forOrg.length === 0) {
+          setError(
+            "No visibility to this org contract. Log in as employer/operator, or as an employee with a roster line.",
+          );
+        }
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+      setOrg(null);
+      setEmployees([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [token, orgContractId]);
 
-  // ── Add Employee (with FHE encryption) ──
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const employerParty = org?.payload.employer;
+
+  const employeePartyIds = useMemo(
+    () => employees.map((e) => e.payload.employee),
+    [employees],
+  );
+
+  const runPayroll = useCallback(async () => {
+    if (!token || !org) throw new Error("Organization not loaded");
+    setPending(true);
+    try {
+      const runAt = new Date().toISOString();
+      const res = await exerciseChoice(
+        "PayrollOrganization",
+        org.cid,
+        "RunPayroll",
+        { runAt },
+        token,
+      );
+      setLastTxSummary(JSON.stringify(res).slice(0, 120));
+      await refresh();
+    } finally {
+      setPending(false);
+    }
+  }, [token, org, refresh]);
+
   const addEmployee = useCallback(
-    async (employeeAddress: string, salaryAmount: number, callerAddress: string): Promise<string> => {
-      const { inputHandle, inputProof } = await encrypt64(
-        salaryAmount,
-        contractAddress,
-        callerAddress
-      );
-
-      const hash = await writeContractAsync({
-        address: contractAddress,
-        abi: PAYROLL_ABI,
-        functionName: 'addEmployee',
-        args: [employeeAddress as `0x${string}`, inputHandle, inputProof],
-      });
-
-      return hash;
+    async (employeeHint: string, salaryAmount: number) => {
+      if (!token || !org) throw new Error("Organization not loaded");
+      const employeeParty = employeeHint.includes("::")
+        ? employeeHint
+        : await allocateParty(employeeHint);
+      setPending(true);
+      try {
+        await exerciseChoice(
+          "PayrollOrganization",
+          org.cid,
+          "AddEmployee",
+          {
+            employee: employeeParty,
+            salary: String(salaryAmount),
+            payrollOrgCid: orgContractId,
+          },
+          token,
+        );
+        await refresh();
+      } finally {
+        setPending(false);
+      }
     },
-    [writeContractAsync, encrypt64, refetchEmployees, contractAddress]
+    [token, org, orgContractId, refresh],
   );
 
-  // ── Remove Employee ──
   const removeEmployee = useCallback(
-    async (employeeAddress: string): Promise<string> => {
-      const hash = await writeContractAsync({
-        address: contractAddress,
-        abi: PAYROLL_ABI,
-        functionName: 'removeEmployee',
-        args: [employeeAddress as `0x${string}`],
-      });
-
-      return hash;
+    async (employmentContractId: string) => {
+      if (!token) throw new Error("Not authenticated");
+      setPending(true);
+      try {
+        await exerciseChoice(
+          "EmploymentContract",
+          employmentContractId,
+          "RemoveEmployee",
+          {},
+          token,
+        );
+        await refresh();
+      } finally {
+        setPending(false);
+      }
     },
-    [writeContractAsync, refetchEmployees, contractAddress]
+    [token, refresh],
   );
 
-  // ── Update Salary (with FHE encryption) ──
-  const updateSalary = useCallback(
-    async (employeeAddress: string, salaryAmount: number, callerAddress: string): Promise<string> => {
-      const { inputHandle, inputProof } = await encrypt64(
-        salaryAmount,
-        contractAddress,
-        callerAddress
-      );
+  const syncTreasuryAllowance = useCallback(async () => {
+    await refresh();
+    return "ok";
+  }, [refresh]);
 
-      const hash = await writeContractAsync({
-        address: contractAddress,
-        abi: PAYROLL_ABI,
-        functionName: 'updateSalary',
-        args: [employeeAddress as `0x${string}`, inputHandle, inputProof],
-      });
-
-      return hash;
+  const updateTreasuryBalance = useCallback(
+    async (newBalance: string) => {
+      if (!token || !org) throw new Error("Organization not loaded");
+      setPending(true);
+      try {
+        await exerciseChoice(
+          "PayrollOrganization",
+          org.cid,
+          "UpdateTreasuryFromEmployer",
+          { newBalance },
+          token,
+        );
+        await refresh();
+      } finally {
+        setPending(false);
+      }
     },
-    [writeContractAsync, encrypt64, contractAddress]
+    [token, org, refresh],
   );
 
-  // ── Pay Bonus (with FHE encryption) ──
-  const payBonus = useCallback(
-    async (employeeAddress: string, bonusAmount: number, memo: string, callerAddress: string): Promise<string> => {
-      const { inputHandle, inputProof } = await encrypt64(
-        bonusAmount,
-        contractAddress,
-        callerAddress
-      );
-
-      const hash = await writeContractAsync({
-        address: contractAddress,
-        abi: PAYROLL_ABI,
-        functionName: 'payBonus',
-        args: [employeeAddress as `0x${string}`, inputHandle, inputProof, memo],
-      });
-
-      return hash;
+  const createOrganization = useCallback(
+    async (input: {
+      employerParty: string;
+      operatorParty: string;
+      orgLabel: string;
+      currency?: string;
+    }) => {
+      if (!token) throw new Error("Login first");
+      setPending(true);
+      try {
+        const result = await createContract<PayrollOrganizationPayload>(
+          "PayrollOrganization",
+          {
+            employer: input.employerParty,
+            operator: input.operatorParty,
+            currency: input.currency ?? "CC",
+            treasuryBalance: "0.0",
+            payrollCooldownSeconds: 86400,
+            lastPayrollRun: "",
+            orgLabel: input.orgLabel,
+          },
+          token,
+        );
+        return result.contractId;
+      } finally {
+        setPending(false);
+      }
     },
-    [writeContractAsync, encrypt64, contractAddress]
+    [token],
   );
-
-  // ── Set Payroll Cooldown ──
-  const setPayrollCooldown = useCallback(
-    async (cooldownInSeconds: number): Promise<string> => {
-      const hash = await writeContractAsync({
-        address: contractAddress,
-        abi: PAYROLL_ABI,
-        functionName: 'setPayrollCooldown',
-        args: [BigInt(cooldownInSeconds)],
-      });
-      return hash;
-    },
-    [writeContractAsync, contractAddress]
-  );
-
-  // ── Grant Salary Access ──
-  const grantSalaryAccess = useCallback(
-    async (thirdPartyAddress: string): Promise<string> => {
-      const hash = await writeContractAsync({
-        address: contractAddress,
-        abi: PAYROLL_ABI,
-        functionName: 'grantSalaryAccess',
-        args: [thirdPartyAddress as `0x${string}`],
-      });
-      return hash;
-    },
-    [writeContractAsync, contractAddress]
-  );
-
-  // ── Sync Treasury Allowance ──
-  const syncTreasuryAllowance = useCallback(async (): Promise<string> => {
-    const hash = await writeContractAsync({
-      address: contractAddress,
-      abi: PAYROLL_ABI,
-      functionName: 'syncTreasuryAllowance',
-      gas: 5_000_000n,
-    });
-    return hash;
-  }, [writeContractAsync, contractAddress]);
 
   return {
-    // Data
-    employer: employer as `0x${string}` | undefined,
-    tokenAddress: tokenAddress as `0x${string}` | undefined,
-    nftAddress: nftAddress as `0x${string}` | undefined,
-    employeeAddresses: (employeeAddresses || []) as string[],
-    isLoadingEmployees,
-    refetchEmployees,
+    employer: employerParty,
+    operator: org?.payload.operator,
+    tokenAddress: undefined as `0x${string}` | undefined,
+    nftAddress: undefined as `0x${string}` | undefined,
+    employeeAddresses: employeePartyIds,
+    employmentRows: employees,
+    isLoadingEmployees: loading,
+    refetchEmployees: refresh,
 
-    // Transaction state
-    txHash,
-    isTxPending,
-    isConfirming,
-    isConfirmed,
+    txHash: lastTxSummary as unknown as `0x${string}` | undefined,
+    isTxPending: pending,
+    isConfirming: false,
+    isConfirmed: false,
 
-    // Actions
     addEmployee,
     removeEmployee,
     runPayroll,
-    grantSalaryAccess,
+    grantSalaryAccess: async () => "",
     syncTreasuryAllowance,
-    updateSalary,
-    payBonus,
-    setPayrollCooldown,
+    updateSalary: async () => "",
+    payBonus: async () => "",
+    setPayrollCooldown: async () => "",
+    createOrganization,
+    updateTreasuryBalance,
 
-    // State
-    payrollCooldown: payrollCooldown as bigint | undefined,
-    lastPayrollRun: lastPayrollRun as bigint | undefined,
-    refetchCooldown,
-    refetchLastRun,
+    payrollCooldown: org?.payload.payrollCooldownSeconds
+      ? BigInt(org.payload.payrollCooldownSeconds)
+      : undefined,
+    lastPayrollRun: org?.payload.lastPayrollRun
+      ? parseRunUnix(org.payload.lastPayrollRun)
+      : undefined,
 
-    // Treasury
-    treasuryHandle: treasuryHandle as bigint | undefined,
-    refetchTreasury,
+    treasuryHandle: undefined,
+    refetchTreasury: refresh,
 
-    // Config
-    contractAddress,
-    isConfigured: !!contractAddress,
+    rawOrg: org,
+    contractAddress: orgContractId as `0x${string}`,
+    isConfigured: !!org || employees.length > 0,
+    error,
+    hasLedger: hasJsonApi(),
+    treasuryBalanceDisplay: org
+      ? `${org.payload.treasuryBalance} ${org.payload.currency}`
+      : null,
   };
 }

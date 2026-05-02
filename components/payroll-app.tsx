@@ -1,19 +1,9 @@
 "use client";
 
-import {
-  useState,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-} from "react";
-import { useAccount, useReadContract } from "wagmi";
+import { useCallback, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import { isAddress } from "viem";
 import { usePayroll } from "@/hooks/usePayroll";
-import { useFhevm } from "@/hooks/useFhevm";
-import { useFaucet } from "@/hooks/useFaucet";
-import { useWallet } from "@/hooks/useWallet";
+import { useCantonAuth } from "@/contexts/canton-auth";
 import { RoleGate } from "@/components/RoleGate";
 import { Sidebar } from "@/components/Sidebar";
 import { AddEmployeeModal } from "@/components/AddEmployeeModal";
@@ -22,7 +12,6 @@ import { PayrollConfirmationModal } from "@/components/PayrollConfirmationModal"
 import { BalanceCard } from "@/components/BalanceCard";
 import { SendTokensModal } from "@/components/SendTokensModal";
 import { FundTreasuryModal } from "@/components/FundTreasuryModal";
-import { PAYROLL_ABI } from "@/lib/contracts";
 
 import { DashboardView } from "@/views/DashboardView";
 import { EmployeesView } from "@/views/EmployeesView";
@@ -32,46 +21,32 @@ import { NotAuthorized } from "@/views/NotAuthorized";
 import { PayslipsView } from "@/views/PayslipsView";
 import { Loader2 } from "lucide-react";
 
+function isLikelyOrgId(id: string) {
+  return id.length >= 8;
+}
+
 export function PayrollApp() {
   const params = useParams<{ contractAddress: string }>();
-  const contractAddress = params.contractAddress as string;
-  const wallet = useAccount();
-  const { connect, disconnect } = useWallet();
-  const {
-    requestMUSDC,
-    isLoading: isFaucetLoading,
-    status: faucetStatus,
-    message: faucetMessage,
-  } = useFaucet();
+  const orgContractId = params.contractAddress as string;
+  const { partyId, token, login, logout } = useCantonAuth();
 
-  const fhevm = useFhevm();
-  const hasDecryptedRef = useRef(false);
+  const payroll = usePayroll(orgContractId);
 
-  const isValidOrg = useMemo(() => {
-    return !!(contractAddress && isAddress(contractAddress));
-  }, [contractAddress]);
+  const isEmployer = useMemo(
+    () =>
+      !!(partyId && payroll.rawOrg?.payload.employer === partyId),
+    [partyId, payroll.rawOrg],
+  );
 
-  const payroll = usePayroll(contractAddress as `0x${string}`);
+  const isEmployee = useMemo(
+    () =>
+      !!(partyId &&
+        payroll.employmentRows.some((r) => r.payload.employee === partyId)),
+    [partyId, payroll.employmentRows],
+  );
 
-  const { data: isEmployeeRecord, isLoading: isLoadingEmployeeCheck } =
-    useReadContract({
-      address: contractAddress as `0x${string}`,
-      abi: PAYROLL_ABI,
-      functionName: "isEmployee",
-      args: [wallet.address as `0x${string}`],
-      query: { enabled: !!wallet.address && !!isValidOrg },
-    });
-
-  const isEmployer = useMemo(() => {
-    if (!wallet.address || !payroll.employer) return false;
-    return wallet.address.toLowerCase() === payroll.employer.toLowerCase();
-  }, [wallet.address, payroll.employer]);
-
-  const isEmployee = isEmployeeRecord === true;
-
+  const [treasuryBalance, setTreasuryBalance] = useState("••••••");
   const [isTreasuryRevealed, setIsTreasuryRevealed] = useState(false);
-  const [treasuryBalance, setTreasuryBalance] = useState<string>("••••••");
-  const [isDecryptingTreasury, setIsDecryptingTreasury] = useState(false);
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isTerminalOpen, setIsTerminalOpen] = useState(false);
@@ -95,62 +70,33 @@ export function PayrollApp() {
     }
   };
 
-  const handleRevealTreasury = useCallback(async () => {
-    if (isTreasuryRevealed || isDecryptingTreasury) return;
-
-    setTreasuryBalance("Syncing...");
-    setIsDecryptingTreasury(true);
-    hasDecryptedRef.current = false;
-
-    try {
-      await payroll.syncTreasuryAllowance();
-    } catch (err) {
-      console.error("[PayrollApp] Sync failed:", err);
-      setTreasuryBalance("Error");
-      setIsDecryptingTreasury(false);
+  const handleRevealTreasury = useCallback(() => {
+    if (payroll.treasuryBalanceDisplay) {
+      setTreasuryBalance(payroll.treasuryBalanceDisplay);
+      setIsTreasuryRevealed(true);
     }
-  }, [payroll, isTreasuryRevealed, isDecryptingTreasury]);
+  }, [payroll.treasuryBalanceDisplay]);
 
   const handleHideTreasury = useCallback(() => {
     setTreasuryBalance("••••••");
     setIsTreasuryRevealed(false);
-    hasDecryptedRef.current = false;
   }, []);
 
-  useEffect(() => {
-    if (isDecryptingTreasury && payroll.isConfirmed && !hasDecryptedRef.current) {
-      hasDecryptedRef.current = true;
-      (async () => {
-        try {
-          const { data: freshHandle } = await payroll.refetchTreasury();
-          if (!freshHandle) throw new Error("Failed to fetch fresh treasury handle");
-          const clear = await fhevm.decryptPublic(freshHandle as bigint);
-          setTreasuryBalance(`${clear.toLocaleString()} USDC`);
-          setIsTreasuryRevealed(true);
-        } catch (err) {
-          console.error("[PayrollApp] Public decryption error:", err);
-          setTreasuryBalance("Error");
-        } finally {
-          setIsDecryptingTreasury(false);
-        }
-      })();
-    }
-  }, [
-    isDecryptingTreasury,
-    payroll.isConfirmed,
-    payroll.refetchTreasury,
-    fhevm.decryptPublic,
-  ]);
-
-  if (!isValidOrg) {
-    return <NotAuthorized message="Invalid organization address" />;
+  if (!isLikelyOrgId(orgContractId)) {
+    return <NotAuthorized message="Invalid organization contract id" />;
   }
 
-  if (!wallet.isConnected) {
+  if (!payroll.hasLedger) {
+    return (
+      <NotAuthorized message="Set NEXT_PUBLIC_CANTON_JSON_API_URL to your Canton JSON API (e.g. http://localhost:7575)." />
+    );
+  }
+
+  if (!token || !partyId) {
     return <RoleGate>{null}</RoleGate>;
   }
 
-  if (isLoadingEmployeeCheck || !payroll.employer) {
+  if (payroll.isLoadingEmployees && !payroll.rawOrg && payroll.employmentRows.length === 0) {
     return (
       <div
         className="app-layout"
@@ -166,14 +112,14 @@ export function PayrollApp() {
           }}
         >
           <Loader2 className="animate-spin" size={24} />
-          <span>Verifying credentials...</span>
+          <span>Loading ledger…</span>
         </div>
       </div>
     );
   }
 
   if (!isEmployer && !isEmployee) {
-    return <NotAuthorized message="You are not part of this organization" />;
+    return <NotAuthorized message="Your party is not part of this payroll organization" />;
   }
 
   return (
@@ -184,11 +130,11 @@ export function PayrollApp() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         wallet={{
-          address: wallet.address,
-          isConnected: wallet.isConnected,
-          isConnecting: wallet.isConnecting,
-          connect,
-          disconnect,
+          address: partyId ?? undefined,
+          isConnected: !!partyId,
+          isConnecting: false,
+          connect: () => login("Employer"),
+          disconnect: logout,
         }}
         isEmployer={isEmployer}
       />
@@ -198,35 +144,35 @@ export function PayrollApp() {
           <DashboardView
             treasuryBalance={treasuryBalance}
             isTreasuryRevealed={isTreasuryRevealed}
-            isDecryptingTreasury={isDecryptingTreasury}
+            isDecryptingTreasury={false}
             employeeCount={payroll.employeeAddresses.length}
-            lastPayroll={payroll.isConfirmed ? "Just now" : "Synced"}
+            lastPayroll={
+              payroll.rawOrg?.payload.lastPayrollRun
+                ? "Recorded"
+                : "—"
+            }
             onRevealTreasury={handleRevealTreasury}
             onHideTreasury={handleHideTreasury}
             isEmployer={isEmployer}
             onRunPayroll={handleRunPayroll}
             onAddEmployee={() => setIsAddModalOpen(true)}
             onFundTreasury={() => setIsFundModalOpen(true)}
-            isPayrollRunning={payroll.isTxPending || payroll.isConfirming}
-            contractAddress={contractAddress as `0x${string}`}
+            isPayrollRunning={payroll.isTxPending}
+            contractAddress={orgContractId as `0x${string}`}
             payrollCooldown={payroll.payrollCooldown}
             lastPayrollRun={payroll.lastPayrollRun}
-            faucetRequest={requestMUSDC}
-            isFaucetLoading={isFaucetLoading}
-            faucetStatus={faucetStatus}
-            faucetMessage={faucetMessage}
           />
         )}
 
         {activeTab === "employees" && (
           <EmployeesView
+            employmentRows={payroll.employmentRows}
             addresses={payroll.employeeAddresses}
             isEmployer={isEmployer}
             onRemove={payroll.removeEmployee}
             isLoading={payroll.isLoadingEmployees}
-            walletAddress={wallet.address || ""}
-            contractAddress={contractAddress as `0x${string}`}
-            nftAddress={payroll.nftAddress}
+            walletAddress={partyId || ""}
+            contractAddress={orgContractId}
             onAddClick={() => setIsAddModalOpen(true)}
             onRunPayroll={handleRunPayroll}
             payrollCooldown={payroll.payrollCooldown}
@@ -235,23 +181,23 @@ export function PayrollApp() {
         )}
 
         {activeTab === "transactions" && (
-          <TransactionsView contractAddress={contractAddress as `0x${string}`} />
+          <TransactionsView contractAddress={orgContractId as `0x${string}`} />
         )}
 
         {activeTab === "settings" && (
           <SettingsView
-            address={wallet.address || ""}
+            address={partyId || ""}
             role={isEmployer ? "Employer" : "Employee"}
-            contractAddress={contractAddress as `0x${string}`}
+            contractAddress={orgContractId as `0x${string}`}
           />
         )}
 
-        {activeTab === "payslips" && payroll.nftAddress && (
-          <PayslipsView nftAddress={payroll.nftAddress} />
+        {activeTab === "payslips" && (
+          <PayslipsView />
         )}
 
         <BalanceCard
-          walletAddress={wallet.address || ""}
+          walletAddress={partyId || ""}
           onSendClick={() => setIsSendModalOpen(true)}
         />
       </main>
@@ -259,10 +205,10 @@ export function PayrollApp() {
       <AddEmployeeModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        onAdd={async (addr, sal) => {
-          await payroll.addEmployee(addr, Number(sal), wallet.address!);
+        onAdd={async (hint, sal) => {
+          await payroll.addEmployee(hint, Number(sal));
         }}
-        isLive={true}
+        isLive={payroll.hasLedger}
       />
 
       <PayrollTerminal
@@ -275,18 +221,15 @@ export function PayrollApp() {
       <SendTokensModal
         isOpen={isSendModalOpen}
         onClose={() => setIsSendModalOpen(false)}
-        senderAddress={wallet.address || ""}
+        senderAddress={partyId || ""}
       />
 
       <FundTreasuryModal
         isOpen={isFundModalOpen}
         onClose={() => setIsFundModalOpen(false)}
-        contractAddress={contractAddress as `0x${string}`}
-        walletAddress={wallet.address as `0x${string}`}
-        onSuccess={async () => {
-          await payroll.refetchTreasury();
+        onFund={async (bal) => {
+          await payroll.updateTreasuryBalance(bal);
         }}
-        syncTreasury={payroll.syncTreasuryAllowance}
       />
 
       <PayrollConfirmationModal

@@ -3,84 +3,67 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
-  useReadContract,
-  useWriteContract,
-  useWaitForTransactionReceipt,
-} from "wagmi";
-import { decodeEventLog, formatEther, isAddress } from "viem";
-import { FACTORY_ABI, FACTORY_ADDRESS } from "@/lib/contracts";
-import { useWallet } from "@/hooks/useWallet";
+  allocateParty,
+  partyToken,
+  createContract,
+} from "@/lib/canton-client";
+import type { PayrollOrganizationPayload } from "@/lib/payroll-types";
 import { Loader2 } from "lucide-react";
 
-/** Landing matches agent-corn/web/src/app/page.tsx layout & typography; copy is payroll-focused. */
 export function CantonLanding() {
   const router = useRouter();
-  const { address, isConnected, connect, isConnecting, chain, switchChain } =
-    useWallet();
-  const isWrongNetwork = isConnected && chain?.id !== 11155111;
-
   const [joinAddr, setJoinAddr] = useState("");
   const [joinErr, setJoinErr] = useState<string | null>(null);
+  const [demoBusy, setDemoBusy] = useState(false);
 
-  const { writeContractAsync, data: txHash } = useWriteContract();
-  const { isLoading: isConfirming, data: receipt } =
-    useWaitForTransactionReceipt({ hash: txHash });
-
-  const { data: deploymentFee } = useReadContract({
-    address: FACTORY_ADDRESS || undefined,
-    abi: FACTORY_ABI,
-    functionName: "deploymentFee",
-    query: { enabled: Boolean(FACTORY_ADDRESS) },
-  });
+  const hasApi = Boolean(process.env.NEXT_PUBLIC_CANTON_JSON_API_URL);
 
   const handleJoin = useCallback(() => {
     const trimmed = joinAddr.trim();
-    if (!isAddress(trimmed)) {
-      setJoinErr("Enter a valid 0x payroll contract address.");
+    if (trimmed.length < 8) {
+      setJoinErr("Paste a PayrollOrganization contract id from your Canton sandbox.");
       return;
     }
     setJoinErr(null);
-    router.push(`/org/${trimmed}`);
+    router.push(`/org/${encodeURIComponent(trimmed)}`);
   }, [joinAddr, router]);
 
-  const handleCreateOrg = async () => {
-    if (!deploymentFee || !FACTORY_ADDRESS) return;
+  const spawnDemoOrg = async () => {
+    if (!hasApi) return;
+    setDemoBusy(true);
     try {
-      await writeContractAsync({
-        address: FACTORY_ADDRESS,
-        abi: FACTORY_ABI,
-        functionName: "createPayroll",
-        value: deploymentFee as bigint,
-      });
-    } catch (err) {
-      console.error("[CantonLanding] Deployment failed:", err);
-    }
-  };
-
-  useEffect(() => {
-    if (!receipt || !FACTORY_ADDRESS) return;
-    const log = receipt.logs.find(
-      (l) => l.address.toLowerCase() === FACTORY_ADDRESS.toLowerCase(),
-    );
-    if (!log) return;
-    try {
-      const decoded = decodeEventLog({
-        abi: FACTORY_ABI,
-        data: log.data,
-        topics: log.topics,
-      });
-      if (decoded.eventName === "PayrollCreated") {
-        const { payrollContract } = decoded.args as {
-          payrollContract?: `0x${string}`;
-        };
-        if (payrollContract) router.push(`/org/${payrollContract}`);
+      const employer = await allocateParty("Employer");
+      const operator = await allocateParty("Operator");
+      const tok = partyToken(employer);
+      const { contractId } = await createContract<PayrollOrganizationPayload>(
+        "PayrollOrganization",
+        {
+          employer,
+          operator,
+          currency: "CC",
+          treasuryBalance: "0.0",
+          payrollCooldownSeconds: 86400,
+          lastPayrollRun: "",
+          orgLabel: "Demo Org",
+        },
+        tok,
+      );
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem(
+          "canton_party",
+          JSON.stringify({ partyId: employer, hint: "Employer" }),
+        );
+        window.location.href = `/org/${encodeURIComponent(contractId)}`;
       }
     } catch (e) {
-      console.error("Failed to decode deployment log", e);
+      console.error(e);
+      setJoinErr(e instanceof Error ? e.message : "Demo spawn failed");
+    } finally {
+      setDemoBusy(false);
     }
-  }, [receipt, router]);
+  };
 
   return (
     <main className="min-h-screen bg-bg overflow-x-hidden text-ice/90">
@@ -130,37 +113,34 @@ export function CantonLanding() {
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-sky" />
             </span>
             <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-ice/60">
-              powered by
-            </span>
-            <span className="font-mono text-xs font-semibold tracking-tight text-ice/90">
-              Canton · Sepolia
+              powered by Daml · Canton ledger
             </span>
           </div>
 
           <h1 className="font-display text-[clamp(56px,9vw,128px)] leading-[0.95] tracking-[-0.02em] mb-8 animate-fade-up [animation-delay:120ms]">
-            <span className="block text-ice-gradient">Confidential</span>
+            <span className="block text-ice-gradient">Payroll on</span>
             <span className="block">
               <em className="font-display italic text-brand-gradient">
-                payroll rails
+                Canton network
               </em>
             </span>
-            <span className="block text-ice-gradient">for teams.</span>
+            <span className="block text-ice-gradient">same UI, Daml core.</span>
           </h1>
 
           <p className="font-sans text-base md:text-lg text-ice/55 leading-relaxed max-w-xl mx-auto mb-10 animate-fade-up [animation-delay:240ms]">
-            Same dashboard layout as Nzuzo — treasury, roster, encrypted salaries,
-            payslip NFTs — with AgentCorn ice-and-navy styling. Dev on Ethereum
-            Sepolia + Zama FHE; Canton ledger integration per plan.md.
+            Nzuzo-style dashboard shell with AgentCorn styling. Business logic lives in{" "}
+            <code className="font-mono text-sky/90">daml/Payroll.daml</code> — parties,
+            observers, and choices — not FHEVM or zkVM on Ethereum.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-3 mb-20 animate-fade-up [animation-delay:360ms]">
-            <Link
+            <a
               href="#join"
               className="btn-primary inline-flex items-center gap-2 font-mono font-semibold text-sm px-7 py-3.5 rounded-full"
             >
-              open payroll
+              open organization
               <span aria-hidden="true">→</span>
-            </Link>
+            </a>
             <a
               href="#how"
               className="btn-ghost inline-flex items-center gap-2 font-mono text-sm px-7 py-3.5 rounded-full"
@@ -172,19 +152,19 @@ export function CantonLanding() {
           <div className="relative ">
             <div className="gradient-border rounded-2xl bg-panel/60 backdrop-blur-xl">
               <div className="grid grid-cols-3 divide-x divide-line">
-                <HeroStat n="FHE" l="salary inputs" />
-                <HeroStat n="100%" l="nzuzo layout" highlight />
-                <HeroStat n="ice" l="agentcorn theme" />
+                <HeroStat n="Daml" l="contracts" />
+                <HeroStat n="CN" l="json api" highlight />
+                <HeroStat n="UI" l="nzuzo layout" />
               </div>
             </div>
           </div>
 
           <div className="mt-16 flex flex-col items-center gap-4 animate-fade-up [animation-delay:600ms]">
             <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-ice/30">
-              powered by
+              stack
             </span>
             <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-3 opacity-60">
-              {["wagmi", "viem", "Zama", "Next.js", "Nzuzo contracts"].map(
+              {["Next.js", "Daml SDK", "Canton", "JSON API", "TypeScript"].map(
                 (n) => (
                   <span
                     key={n}
@@ -201,33 +181,31 @@ export function CantonLanding() {
 
       <Divider />
 
-      <section className="relative px-6 py-28">
+      <section id="how" className="relative px-6 py-28">
         <div className="max-w-6xl mx-auto">
           <SectionHeader
             n="01"
-            kicker="threat model"
+            kicker="model"
             title={
               <>
-                Public payroll leaks identity.
-                <br />
+                Parties and templates —{" "}
                 <em className="font-display italic text-brand-gradient">
-                  Precision privacy fixes that.
+                  not global EVM state.
                 </em>
               </>
             }
           />
           <div className="grid md:grid-cols-2 gap-4 mt-12">
             <Card variant="problem">
-              <CardKicker tone="bad">the problem</CardKicker>
+              <CardKicker tone="bad">evm stack</CardKicker>
               <h3 className="font-display text-3xl text-ice mb-6 leading-tight">
-                Salary data and counterparties exposed on-chain.
+                FHEVM demos leak complexity into the browser.
               </h3>
               <ul className="space-y-3">
                 {[
-                  "Transparent balances reveal org burn rate",
-                  "Employee wallets linkable across protocols",
-                  "Legacy payroll SaaS is not verifiable by employees",
-                  "No single UX that matches institutional ops tools",
+                  "MetaMask + Sepolia unrelated to Canton participants",
+                  "Encrypted handles require WASM relayers",
+                  "Payroll semantics encoded in Solidity ABIs",
                 ].map((item) => (
                   <li
                     key={item}
@@ -240,16 +218,15 @@ export function CantonLanding() {
               </ul>
             </Card>
             <Card variant="fix">
-              <CardKicker tone="good">the fix</CardKicker>
+              <CardKicker tone="good">canton stack</CardKicker>
               <h3 className="font-display text-3xl text-ice mb-6 leading-tight">
-                Encrypted inputs, confidential treasury, Nzuzo-grade dashboard.
+                PayrollOrganization + EmploymentContract on your participant.
               </h3>
               <ul className="space-y-3">
                 {[
-                  "FHE-encrypted salary commitments on deploy",
-                  "Employer / employee role gates in-app",
-                  "Payslip NFT trail without plaintext salaries",
-                  "AgentCorn visual system for parity with your cron product",
+                  "Ledger API / JSON API with JWT actAs party",
+                  "Plain Decimal salaries — visibility via observers",
+                  "Run payroll archive/create handled by your nodes",
                 ].map((item) => (
                   <li
                     key={item}
@@ -267,110 +244,36 @@ export function CantonLanding() {
 
       <Divider />
 
-      <section id="how" className="relative px-6 py-28">
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-halftone opacity-30 [mask-image:linear-gradient(180deg,transparent,black_30%,black_70%,transparent)]"
-        />
-        <div className="relative max-w-6xl mx-auto">
-          <SectionHeader
-            n="02"
-            kicker="execution flow"
-            title={
-              <>
-                Fund → roster → run.
-                <br />
-                <span className="text-ice/40">No leaked salaries in the happy path.</span>
-              </>
-            }
-          />
-
-          <div className="grid md:grid-cols-2 gap-4 mt-12">
-            {[
-              {
-                n: "01",
-                t: "fund treasury",
-                d: "Deposit confidential stablecoin into the payroll contract treasury handle.",
-                badge: "treasury",
-              },
-              {
-                n: "02",
-                t: "add employees",
-                d: "Encrypt salary amounts client-side; only handles + proofs hit the chain.",
-                badge: "zama fhe",
-              },
-              {
-                n: "03",
-                t: "run payroll batch",
-                d: "Employer triggers runPayroll; NFT payslips mint per employee policy.",
-                badge: "settlement",
-              },
-              {
-                n: "04",
-                t: "canton handoff",
-                d: "Swap RPC + contract bindings for Canton participant APIs — same UI shell.",
-                badge: "roadmap",
-              },
-            ].map((step) => (
-              <div
-                key={step.n}
-                className="group relative gradient-border rounded-2xl bg-panel/40 backdrop-blur-sm p-7 transition-all hover:bg-panel/60 hover:-translate-y-0.5"
-              >
-                <div className="flex items-baseline justify-between mb-5">
-                  <span className="font-display text-5xl text-brand-gradient leading-none">
-                    {step.n}
-                  </span>
-                  <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-sky bg-sky/10 border border-sky/20 px-2.5 py-1 rounded-full">
-                    {step.badge}
-                  </span>
-                </div>
-                <h3 className="font-sans text-lg font-semibold text-ice mb-2">
-                  {step.t}
-                </h3>
-                <p className="font-sans text-sm text-ice/55 leading-relaxed">
-                  {step.d}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <Divider />
-
       <section id="use" className="relative px-6 py-28">
         <div className="max-w-6xl mx-auto">
           <SectionHeader
-            n="03"
+            n="02"
             kicker="use cases"
             title={
               <>
-                What teams are{" "}
+                Treasury, roster,{" "}
                 <em className="font-display italic text-brand-gradient">
-                  running
+                  run batch.
                 </em>
-                .
               </>
             }
-            sub="treasury · compliance · remote payroll."
           />
-
           <div className="grid md:grid-cols-3 gap-4 mt-12">
             {[
               {
-                n: "dao payroll",
-                p: "If contributor counts swing weekly, pay from a shared treasury without exposing individual rates on-chain.",
-                tag: "treasury",
+                n: "employer",
+                p: "Fund treasury balance, add EmploymentContract rows, exercise RunPayroll.",
+                tag: "admin",
               },
               {
-                n: "contractor grid",
-                p: "If invoices batch monthly, lock amounts in FHE and release on a single payroll run.",
-                tag: "batch",
+                n: "employee",
+                p: "Observer on own contract line — no org-wide read unless you add it in Daml.",
+                tag: "privacy",
               },
               {
-                n: "pilot → canton",
-                p: "Prove the Nzuzo dashboard UX on Sepolia, then port signers to Canton parties.",
-                tag: "migration",
+                n: "operator",
+                p: "Optional automation party for exercises / workflows.",
+                tag: "ops",
               },
             ].map((uc) => (
               <div
@@ -400,29 +303,23 @@ export function CantonLanding() {
       <section id="stack" className="relative px-6 py-28">
         <div className="max-w-6xl mx-auto">
           <SectionHeader
-            n="04"
+            n="03"
             kicker="stack"
             title={
               <>
-                Same contracts as Nzuzo.
-                <br />
-                <em className="font-display italic text-brand-gradient">
-                  AgentCorn-grade presentation.
-                </em>
+                Build DAR → configure{" "}
+                <code className="font-mono text-sm text-sky/90">
+                  NEXT_PUBLIC_DAML_PACKAGE_ID
+                </code>
               </>
             }
           />
-
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-12">
             {[
+              { t: "Daml", s: "Payroll.daml" },
+              { t: "Canton", s: "participant + json-api" },
               { t: "Next.js", s: "app router" },
-              { t: "wagmi / viem", s: "wallet + rpc" },
-              { t: "Zama FHE", s: "encrypt / decrypt" },
-              { t: "Nzuzo ABIs", s: "payroll + nft" },
-              { t: "Sepolia", s: "dev network" },
-              { t: "Canton", s: "target ledger" },
-              { t: "Tailwind v4", s: "agentcorn tokens" },
-              { t: "TypeScript", s: "end-to-end" },
+              { t: "JWT", s: "actAs party" },
             ].map((pill) => (
               <div
                 key={pill.t}
@@ -456,27 +353,35 @@ export function CantonLanding() {
         />
         <div className="relative max-w-2xl mx-auto">
           <div className="font-mono text-[11px] tracking-[0.3em] uppercase text-ice/40 mb-6">
-            // open organization
+            // connect
           </div>
           <h2 className="font-display text-[clamp(40px,6vw,80px)] leading-[0.95] tracking-[-0.02em] mb-6">
-            <span className="text-ice-gradient">Paste contract,</span>
+            <span className="text-ice-gradient">Paste contract id,</span>
             <br />
             <em className="font-display italic text-brand-gradient">
-              launch dashboard.
+              then log in as a party.
             </em>
           </h2>
           <p className="font-sans text-base text-ice/55 leading-relaxed mb-10 max-w-md mx-auto">
-            Connect on Sepolia for factory deploy. Shortcuts mirror the Nzuzo
-            flow — only styling follows AgentCron.
+            Run{" "}
+            <code className="font-mono text-xs">daml build</code> and{" "}
+            <code className="font-mono text-xs">daml start</code>, set{" "}
+            <code className="font-mono text-xs">NEXT_PUBLIC_CANTON_JSON_API_URL</code>{" "}
+            (e.g. http://localhost:7575).
           </p>
 
           <div className="gradient-border rounded-2xl bg-panel/50 backdrop-blur-xl p-8 text-left max-w-md mx-auto mb-8">
+            {!hasApi && (
+              <p className="font-mono text-xs text-amber-400/90 mb-4">
+                Set NEXT_PUBLIC_CANTON_JSON_API_URL to enable API + demo spawn.
+              </p>
+            )}
             <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.2em] text-ice/40">
-              payroll contract (0x…)
+              PayrollOrganization contract id
             </label>
             <input
               className="input-field font-mono mb-3"
-              placeholder="0x…"
+              placeholder="#package:hash:cid…"
               value={joinAddr}
               onChange={(e) => {
                 setJoinAddr(e.target.value);
@@ -489,60 +394,25 @@ export function CantonLanding() {
             <button
               type="button"
               onClick={handleJoin}
-              className="btn-primary mb-6 w-full rounded-lg py-3 font-mono text-sm font-semibold"
+              className="btn-primary mb-4 w-full rounded-lg py-3 font-mono text-sm font-semibold"
             >
               Go to dashboard →
             </button>
-
-            {!isConnected ? (
-              <button
-                type="button"
-                onClick={() => connect()}
-                disabled={isConnecting}
-                className="btn-ghost mb-4 flex w-full items-center justify-center gap-2 rounded-lg py-2.5 font-mono text-sm"
-              >
-                {isConnecting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    connecting…
-                  </>
-                ) : (
-                  "Connect wallet (factory deploy)"
-                )}
-              </button>
-            ) : (
-              <p className="mb-4 font-mono text-xs text-ice/45">
-                {address?.slice(0, 6)}…{address?.slice(-4)}
-              </p>
-            )}
-
-            {FACTORY_ADDRESS && deploymentFee !== undefined && isConnected && (
-              <div className="border-t border-line pt-6">
-                <p className="mb-3 font-mono text-xs text-ice/50">
-                  Factory deploy fee {formatEther(deploymentFee as bigint)} ETH
-                </p>
-                {isWrongNetwork ? (
-                  <button
-                    type="button"
-                    onClick={() => switchChain()}
-                    className="btn-primary w-full rounded-lg py-2.5 font-mono text-sm"
-                  >
-                    Switch to Sepolia
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleCreateOrg}
-                    disabled={isConfirming}
-                    className="btn-primary w-full rounded-lg py-2.5 font-mono text-sm font-semibold disabled:opacity-50"
-                  >
-                    {isConfirming ? "Confirming…" : "Deploy new payroll"}
-                  </button>
-                )}
-              </div>
-            )}
+            <button
+              type="button"
+              onClick={spawnDemoOrg}
+              disabled={!hasApi || demoBusy}
+              className="btn-ghost w-full rounded-lg py-2.5 font-mono text-sm"
+            >
+              {demoBusy ? (
+                <>
+                  <Loader2 className="inline h-4 w-4 animate-spin" /> Creating…
+                </>
+              ) : (
+                "Spawn demo org (Employer session)"
+              )}
+            </button>
           </div>
-
         </div>
       </section>
 
@@ -556,11 +426,6 @@ export function CantonLanding() {
               cantonpayroll · {new Date().getFullYear()}
             </span>
           </div>
-          <div className="flex items-center gap-6">
-            <span className="text-ice/40 text-xs font-mono">
-              nzuzo layout · agentcorn theme
-            </span>
-          </div>
         </div>
       </footer>
     </main>
@@ -570,17 +435,13 @@ export function CantonLanding() {
 function NavLink({
   href,
   children,
-  external,
 }: {
   href: string;
   children: ReactNode;
-  external?: boolean;
 }) {
   return (
     <a
       href={href}
-      target={external ? "_blank" : undefined}
-      rel={external ? "noreferrer" : undefined}
       className="text-ice/50 hover:text-ice text-xs font-mono px-3 py-2 transition-colors"
     >
       {children}
@@ -592,12 +453,10 @@ function SectionHeader({
   n,
   kicker,
   title,
-  sub,
 }: {
   n: string;
   kicker: string;
   title: ReactNode;
-  sub?: string;
 }) {
   return (
     <div>
@@ -611,11 +470,6 @@ function SectionHeader({
       <h2 className="font-display text-[clamp(36px,5vw,64px)] leading-[1.02] tracking-[-0.02em] text-ice">
         {title}
       </h2>
-      {sub && (
-        <p className="font-mono text-xs text-ice/40 mt-3 tracking-wider">
-          {sub}
-        </p>
-      )}
     </div>
   );
 }

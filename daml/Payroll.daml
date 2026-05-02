@@ -1,0 +1,104 @@
+-- | Payroll on Canton — party-based visibility (no EVM / no FHEVM).
+module Payroll where
+
+template PayrollOrganization
+  with
+    employer : Party
+    operator : Party
+    currency : Text
+    treasuryBalance : Decimal
+    payrollCooldownSeconds : Int
+    lastPayrollRun : Text
+    orgLabel : Text
+  where
+    signatory employer
+    observer operator
+
+    choice AddEmployee : ContractId EmploymentContract
+      with
+        employee : Party
+        salary : Decimal
+        payrollOrgCid : Text
+      controller employer
+      do
+        create EmploymentContract with
+          payrollOrgCid
+          employer
+          operator
+          employee
+          salary
+          currency
+          orgLabel
+
+    choice UpdateTreasuryFromEmployer : ContractId PayrollOrganization
+      with newBalance : Decimal
+      controller employer
+      do
+        archive self
+        create PayrollOrganization with
+          employer
+          operator
+          currency
+          treasuryBalance = newBalance
+          payrollCooldownSeconds
+          lastPayrollRun
+          orgLabel
+
+    choice SetPayrollCooldown : ContractId PayrollOrganization
+      with seconds : Int
+      controller employer
+      do
+        archive self
+        create PayrollOrganization with
+          employer
+          operator
+          currency
+          treasuryBalance
+          payrollCooldownSeconds = seconds
+          lastPayrollRun
+          orgLabel
+
+    choice RunPayroll : ContractId PayrollOrganization
+      with runAt : Text
+      controller employer
+      do
+        archive self
+        create PayrollOrganization with
+          employer
+          operator
+          currency
+          treasuryBalance
+          payrollCooldownSeconds
+          lastPayrollRun = runAt
+          orgLabel
+
+template EmploymentContract
+  with
+    payrollOrgCid : Text
+    employer : Party
+    operator : Party
+    employee : Party
+    salary : Decimal
+    currency : Text
+    orgLabel : Text
+  where
+    signatory employer
+    observer employee, operator
+
+    choice RemoveEmployee : ()
+      controller employer
+      do archive self
+
+    choice UpdateSalary : ContractId EmploymentContract
+      with newSalary : Decimal
+      controller employer
+      do
+        archive self
+        create EmploymentContract with
+          payrollOrgCid
+          employer
+          operator
+          employee
+          salary = newSalary
+          currency
+          orgLabel
