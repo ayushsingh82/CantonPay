@@ -1,8 +1,8 @@
-# canton-payroll
+# CantonPay
 
 ## What we’re building
 
-**canton-payroll** is a web frontend for **employer–employee payroll on Canton**: a dashboard-style shell (sidebar, stats rail, roster table, action zone) with an ice/navy visual theme. The **source of truth is Daml** on the ledger, not an EVM chain.
+**CantonPay** is a web frontend for **employer–employee payroll on Canton**: a dashboard-style shell (sidebar, stats rail, roster table, action zone) with an ice/navy visual theme. The **source of truth is Daml** on the ledger, not an EVM chain.
 
 You model organizations and employment lines in **`daml/Payroll.daml`** (`PayrollOrganization`, `EmploymentContract`). This Next.js app talks to your participant through the **Ledger JSON API**: create/query contracts, exercise choices (`RunPayroll`, `AddEmployee`, etc.), and drive the UI from ledger state.
 

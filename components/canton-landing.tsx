@@ -68,31 +68,25 @@ export function CantonLanding() {
   return (
     <main className="min-h-screen bg-bg overflow-x-hidden text-ice/90">
       <nav className="sticky top-0 z-50 border-b border-line backdrop-blur-2xl bg-bg/70">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <span className="relative w-7 h-7 rounded-lg bg-brand-fade flex items-center justify-center text-bg font-bold text-sm shadow-[0_0_18px_rgba(73,136,196,0.5)]">
-              ▲
-            </span>
-            <span className="font-mono font-semibold text-sm tracking-tight text-ice">
-              canton<span className="text-sky">payroll</span>
-            </span>
+        <div
+          className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between"
+          style={{ maxWidth: "80rem", margin: "0 auto", width: "100%" }}
+        >
+          <Link href="/" className="font-mono font-semibold text-base leading-7 tracking-tight text-ice">
+            Canton<span className="text-sky">Pay</span>
           </Link>
-          <div className="hidden md:flex items-center gap-1">
-            <NavLink href="#how">how</NavLink>
-            <NavLink href="#use">use cases</NavLink>
-            <NavLink href="#stack">stack</NavLink>
-          </div>
-          <Link
+       
+          <a
             href="/dashboard"
-            className="btn-primary inline-flex items-center gap-2 font-mono font-semibold text-xs px-4 py-2 rounded-lg"
+            className="btn-primary inline-flex items-center   font-mono font-semibold text-sm leading-7 px-10 py-2.5 rounded-lg"
           >
             dashboard
-            <span aria-hidden="true">→</span>
-          </Link>
+          
+          </a>
         </div>
       </nav>
 
-      <section className="relative px-6 pt-24 pb-40 overflow-hidden">
+      <section className="relative px-4 sm:px-6 pt-14 sm:pt-20 lg:pt-24 pb-16 sm:pb-24 lg:pb-32 overflow-hidden">
         <div
           aria-hidden="true"
           className="absolute inset-0 bg-grid [mask-image:radial-gradient(ellipse_70%_60%_at_50%_30%,black,transparent)]"
@@ -106,41 +100,42 @@ export function CantonLanding() {
           className="absolute left-1/2 top-1/3 -translate-x-1/2 w-[900px] h-[900px] rounded-full glow-orb pointer-events-none"
         />
 
-        <div className="relative max-w-5xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full border border-edge bg-panel/60 backdrop-blur-md mb-8 animate-fade-up">
+        <div className="relative mx-auto w-full max-w-6xl text-center">
+          <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-edge bg-panel/60 backdrop-blur-md mb-8 sm:mb-10 animate-fade-up">
             <span className="relative flex h-1.5 w-1.5">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sky opacity-60" />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-sky" />
             </span>
             <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-ice/60">
-              powered by Daml · Canton ledger
+              employer payroll on canton
             </span>
           </div>
 
-          <h1 className="font-display text-[clamp(56px,9vw,128px)] leading-[0.95] tracking-[-0.02em] mb-8 animate-fade-up [animation-delay:120ms]">
-            <span className="block text-ice-gradient">Payroll on</span>
+          <h1 className="font-display text-[clamp(34px,8vw,96px)] leading-[0.98] tracking-[-0.02em] mb-8 sm:mb-10 animate-fade-up [animation-delay:120ms]">
+            <span className="block text-ice-gradient">CantonPay</span>
             <span className="block">
               <em className="font-display italic text-brand-gradient">
-                Canton network
+                payroll control center
               </em>
             </span>
-            <span className="block text-ice-gradient">same UI, Daml core.</span>
+            <span className="block text-ice-gradient">for employers and employees.</span>
           </h1>
 
-          <p className="font-sans text-base md:text-lg text-ice/55 leading-relaxed max-w-xl mx-auto mb-10 animate-fade-up [animation-delay:240ms]">
-            Dashboard shell for payroll operators and employees. Business logic lives in{" "}
-            <code className="font-mono text-sky/90">daml/Payroll.daml</code> — parties,
-            observers, and choices exercised through the Canton JSON API.
+          <p className="font-sans text-sm sm:text-base md:text-lg text-ice/60 leading-8 max-w-3xl mx-auto mb-10 sm:mb-12 px-2 sm:px-0 animate-fade-up [animation-delay:240ms]">
+            Run payroll with a single source of truth: treasury, roster, salary contracts,
+            cooldown control, and batch execution. Business logic lives in{" "}
+            <code className="font-mono text-sky/90">daml/Payroll.daml</code> with
+            party-scoped visibility on Canton.
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-3 mb-20 animate-fade-up [animation-delay:360ms]">
-            <Link
-              href="/dashboard"
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-5 mb-12 sm:mb-20 animate-fade-up [animation-delay:360ms]">
+            <a
+              href="#join"
               className="btn-primary inline-flex items-center gap-2 font-mono font-semibold text-sm px-7 py-3.5 rounded-full"
             >
-              open dashboard
+              open app
               <span aria-hidden="true">→</span>
-            </Link>
+            </a>
             <a
               href="#how"
               className="btn-ghost inline-flex items-center gap-2 font-mono text-sm px-7 py-3.5 rounded-full"
@@ -149,22 +144,22 @@ export function CantonLanding() {
             </a>
           </div>
 
-          <div className="relative ">
-            <div className="gradient-border rounded-2xl bg-panel/60 backdrop-blur-xl">
-              <div className="grid grid-cols-3 divide-x divide-line">
-                <HeroStat n="Daml" l="contracts" />
-                <HeroStat n="CN" l="json api" highlight />
-                <HeroStat n="UI" l="dashboard" />
+          <div className="relative w-full max-w-5xl mx-auto mb-12 sm:mb-16">
+            <div className="gradient-border rounded-2xl bg-panel/60 backdrop-blur-xl overflow-hidden shadow-[0_20px_80px_-35px_rgba(73,136,196,0.55)]">
+              <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-line">
+                <HeroStat n="Roster" l="party-based access" />
+                <HeroStat n="Payroll" l="single run flow" highlight />
+                <HeroStat n="Treasury" l="controlled funding" />
               </div>
             </div>
           </div>
 
-          <div className="mt-16 flex flex-col items-center gap-4 animate-fade-up [animation-delay:600ms]">
+          <div className="mt-10 sm:mt-14 flex flex-col items-center gap-5 animate-fade-up [animation-delay:600ms]">
             <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-ice/30">
-              stack
+              what you get
             </span>
-            <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-3 opacity-60">
-              {["Next.js", "Daml SDK", "Canton", "JSON API", "TypeScript"].map(
+            <div className="flex flex-wrap items-center justify-center gap-x-8 sm:gap-x-10 gap-y-3 opacity-70 max-w-3xl mx-auto">
+              {["Party login", "Employee contracts", "Treasury updates", "Run payroll", "Audit-ready history"].map(
                 (n) => (
                   <span
                     key={n}
@@ -181,31 +176,31 @@ export function CantonLanding() {
 
       <Divider />
 
-      <section id="how" className="relative px-6 py-28">
-        <div className="max-w-6xl mx-auto">
+      <section id="how" className="relative px-4 sm:px-6 py-20 sm:py-24 lg:py-32">
+        <div className="max-w-6xl mx-auto w-full">
           <SectionHeader
             n="01"
-            kicker="model"
+            kicker="features"
             title={
               <>
-                Parties and templates —{" "}
+                Built for real payroll operations —{" "}
                 <em className="font-display italic text-brand-gradient">
-                  one canonical ledger.
+                  not spreadsheet drift.
                 </em>
               </>
             }
           />
-          <div className="grid md:grid-cols-2 gap-4 mt-12">
+          <div className="grid md:grid-cols-2 gap-6 sm:gap-8 mt-10 sm:mt-14 items-stretch">
             <Card variant="problem">
-              <CardKicker tone="bad">typical silos</CardKicker>
-              <h3 className="font-display text-3xl text-ice mb-6 leading-tight">
-                Payroll truth scattered across spreadsheets and SaaS tools.
+              <CardKicker tone="bad">without cantonpay</CardKicker>
+              <h3 className="font-display text-3xl text-ice mb-6 leading-tight text-center">
+                Payroll data becomes fragmented and hard to verify.
               </h3>
-              <ul className="space-y-3">
+              <ul className="space-y-3 max-w-md mx-auto text-left">
                 {[
-                  "No single contract that both HR and finance can agree on",
-                  "Weak audit trail for who approved salary or roster changes",
-                  "Exports and emails instead of a participant-backed ledger",
+                  "Roster and salary updates live in separate tools",
+                  "Approval trail is incomplete or manual",
+                  "Treasury and payout actions are hard to reconcile",
                 ].map((item) => (
                   <li
                     key={item}
@@ -218,15 +213,15 @@ export function CantonLanding() {
               </ul>
             </Card>
             <Card variant="fix">
-              <CardKicker tone="good">canton stack</CardKicker>
-              <h3 className="font-display text-3xl text-ice mb-6 leading-tight">
-                PayrollOrganization + EmploymentContract on your participant.
+              <CardKicker tone="good">with cantonpay</CardKicker>
+              <h3 className="font-display text-3xl text-ice mb-6 leading-tight text-center">
+                One workflow from funding to payroll execution.
               </h3>
-              <ul className="space-y-3">
+              <ul className="space-y-3 max-w-md mx-auto text-left">
                 {[
-                  "Ledger API / JSON API with JWT actAs party",
-                  "Plain Decimal salaries — visibility via observers",
-                  "Run payroll archive/create handled by your nodes",
+                  "Add and manage employees through EmploymentContract records",
+                  "Control treasury balance before each payroll cycle",
+                  "Execute payroll in a consistent, repeatable batch flow",
                 ].map((item) => (
                   <li
                     key={item}
@@ -244,52 +239,52 @@ export function CantonLanding() {
 
       <Divider />
 
-      <section id="use" className="relative px-6 py-28">
-        <div className="max-w-6xl mx-auto">
+      <section id="use" className="relative px-4 sm:px-6 py-20 sm:py-24 lg:py-32">
+        <div className="max-w-6xl mx-auto w-full">
           <SectionHeader
             n="02"
-            kicker="use cases"
+            kicker="advantages"
             title={
               <>
-                Treasury, roster,{" "}
+                Clear ownership, stronger controls,{" "}
                 <em className="font-display italic text-brand-gradient">
-                  run batch.
+                  fewer payroll mistakes.
                 </em>
               </>
             }
           />
-          <div className="grid md:grid-cols-3 gap-4 mt-12">
+          <div className="grid md:grid-cols-3 gap-6 sm:gap-8 mt-10 sm:mt-14 items-stretch">
             {[
               {
                 n: "employer",
-                p: "Fund treasury balance, add EmploymentContract rows, exercise RunPayroll.",
-                tag: "admin",
+                p: "Funds treasury, manages employee contracts, and triggers payroll runs.",
+                tag: "control",
               },
               {
                 n: "employee",
-                p: "Observer on own contract line — no org-wide read unless you add it in Daml.",
+                p: "Sees only what their party is allowed to see from payroll records.",
                 tag: "privacy",
               },
               {
                 n: "operator",
-                p: "Optional automation party for exercises / workflows.",
+                p: "Runs operational workflows and enforces payroll cadence.",
                 tag: "ops",
               },
             ].map((uc) => (
               <div
                 key={uc.n}
-                className="group relative rounded-2xl bg-panel/40 border border-line p-7 transition-all hover:border-edge hover:bg-panel/60 overflow-hidden"
+                className="group relative rounded-2xl bg-panel/40 border border-line p-8 sm:p-9 transition-all hover:border-edge hover:bg-panel/60 overflow-hidden"
               >
                 <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-sky/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="flex items-start justify-between gap-2 mb-5">
-                  <span className="font-mono text-sm font-semibold text-ice">
+                <div className="flex flex-col items-center justify-center gap-2 mb-5">
+                  <span className="font-mono text-sm font-semibold text-ice text-center">
                     {uc.n}
                   </span>
                   <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-ice/40 border border-line px-2 py-0.5 rounded-full">
                     {uc.tag}
                   </span>
                 </div>
-                <p className="font-display italic text-xl text-ice/75 leading-snug">
+                <p className="font-display italic text-xl text-ice/75 leading-relaxed text-center">
                   &ldquo;{uc.p}&rdquo;
                 </p>
               </div>
@@ -300,35 +295,33 @@ export function CantonLanding() {
 
       <Divider />
 
-      <section id="stack" className="relative px-6 py-28">
-        <div className="max-w-6xl mx-auto">
+      <section id="stack" className="relative px-4 sm:px-6 py-20 sm:py-24 lg:py-32">
+        <div className="max-w-6xl mx-auto w-full">
           <SectionHeader
             n="03"
-            kicker="stack"
+            kicker="workflow"
             title={
               <>
-                Build DAR → configure{" "}
-                <code className="font-mono text-sm text-sky/90">
-                  NEXT_PUBLIC_DAML_PACKAGE_ID
-                </code>
+                Fund treasury → maintain roster →{" "}
+                <code className="font-mono text-sm text-sky/90">run payroll</code>
               </>
             }
           />
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mt-10 sm:mt-14 items-stretch">
             {[
-              { t: "Daml", s: "Payroll.daml" },
-              { t: "Canton", s: "participant + json-api" },
-              { t: "Next.js", s: "app router" },
-              { t: "JWT", s: "actAs party" },
+              { t: "1. Login", s: "Act as Employer, Employee, or Operator party" },
+              { t: "2. Configure", s: "Create and maintain PayrollOrganization data" },
+              { t: "3. Manage", s: "Add or remove EmploymentContract rows" },
+              { t: "4. Execute", s: "Run payroll when treasury and cooldown allow" },
             ].map((pill) => (
               <div
                 key={pill.t}
                 className="group rounded-xl bg-panel/40 border border-line px-5 py-4 transition-all hover:bg-raised/30 hover:border-edge"
               >
-                <div className="font-sans text-sm font-semibold text-ice group-hover:text-sky transition-colors mb-1">
+                <div className="font-sans text-sm font-semibold text-ice group-hover:text-sky transition-colors mb-1 text-center">
                   {pill.t}
                 </div>
-                <div className="font-mono text-[10px] text-ice/40 tracking-wider">
+                <div className="font-mono text-[10px] text-ice/40 tracking-wider text-center">
                   {pill.s}
                 </div>
               </div>
@@ -341,7 +334,7 @@ export function CantonLanding() {
 
       <section
         id="join"
-        className="relative px-6 py-36 text-center overflow-hidden"
+        className="relative px-4 sm:px-6 py-20 sm:py-24 lg:py-32 text-center overflow-hidden"
       >
         <div
           aria-hidden="true"
@@ -351,26 +344,23 @@ export function CantonLanding() {
           aria-hidden="true"
           className="absolute inset-0 bg-halftone opacity-30 [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,black,transparent_70%)]"
         />
-        <div className="relative max-w-2xl mx-auto">
+        <div className="relative max-w-2xl mx-auto w-full text-center">
           <div className="font-mono text-[11px] tracking-[0.3em] uppercase text-ice/40 mb-6">
-            // connect
+            // start payroll
           </div>
-          <h2 className="font-display text-[clamp(40px,6vw,80px)] leading-[0.95] tracking-[-0.02em] mb-6">
-            <span className="text-ice-gradient">Paste contract id,</span>
+          <h2 className="font-display text-[clamp(28px,7vw,70px)] leading-[0.96] tracking-[-0.02em] mb-5 sm:mb-6">
+            <span className="text-ice-gradient">Paste organization id,</span>
             <br />
             <em className="font-display italic text-brand-gradient">
               then log in as a party.
             </em>
           </h2>
-          <p className="font-sans text-base text-ice/55 leading-relaxed mb-10 max-w-md mx-auto">
-            Run{" "}
-            <code className="font-mono text-xs">daml build</code> and{" "}
-            <code className="font-mono text-xs">daml start</code>, set{" "}
-            <code className="font-mono text-xs">NEXT_PUBLIC_CANTON_JSON_API_URL</code>{" "}
-            (e.g. http://localhost:7575).
+          <p className="font-sans text-sm sm:text-base text-ice/60 leading-relaxed mb-8 sm:mb-10 max-w-xl mx-auto px-2 sm:px-0">
+            Open an existing payroll organization directly, or spawn a demo org
+            and start operating payroll in minutes.
           </p>
 
-          <div className="gradient-border rounded-2xl bg-panel/50 backdrop-blur-xl p-8 text-left max-w-md mx-auto mb-8">
+          <div className="gradient-border rounded-2xl bg-panel/50 backdrop-blur-xl p-6 sm:p-8 text-left max-w-xl mx-auto mb-8">
             {!hasApi && (
               <p className="font-mono text-xs text-amber-400/90 mb-4">
                 Set NEXT_PUBLIC_CANTON_JSON_API_URL to enable API + demo spawn.
@@ -396,7 +386,7 @@ export function CantonLanding() {
               onClick={handleJoin}
               className="btn-primary mb-4 w-full rounded-lg py-3 font-mono text-sm font-semibold"
             >
-              Go to dashboard →
+              Open app →
             </button>
             <button
               type="button"
@@ -417,14 +407,12 @@ export function CantonLanding() {
       </section>
 
       <footer className="border-t border-line px-6 py-8 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5">
-            <span className="w-6 h-6 rounded-md bg-brand-fade flex items-center justify-center text-bg font-bold text-xs">
-              ▲
-            </span>
-            <span className="text-ice/40 text-xs font-mono">
-              cantonpayroll · {new Date().getFullYear()}
-            </span>
+        <div
+          className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4"
+          style={{ maxWidth: "80rem", margin: "0 auto", width: "100%" }}
+        >
+          <div className="text-ice/40 text-xs font-mono">
+            CantonPay · {new Date().getFullYear()}
           </div>
         </div>
       </footer>
@@ -442,7 +430,7 @@ function NavLink({
   return (
     <a
       href={href}
-      className="text-ice/50 hover:text-ice text-xs font-mono px-3 py-2 transition-colors"
+      className="text-ice/50 hover:text-ice text-sm leading-7 font-mono px-3 py-2.5 transition-colors"
     >
       {children}
     </a>
@@ -459,15 +447,15 @@ function SectionHeader({
   title: ReactNode;
 }) {
   return (
-    <div>
-      <div className="flex items-center gap-3 mb-6">
+    <div className="text-center">
+      <div className="flex items-center justify-center gap-3 mb-6">
         <span className="font-mono text-xs text-sky">{n}</span>
         <span className="w-8 h-px bg-edge" />
         <span className="font-mono text-[10px] text-ice/40 tracking-[0.25em] uppercase">
           {kicker}
         </span>
       </div>
-      <h2 className="font-display text-[clamp(36px,5vw,64px)] leading-[1.02] tracking-[-0.02em] text-ice">
+      <h2 className="font-display text-[clamp(28px,5vw,60px)] leading-[1.04] tracking-[-0.02em] text-ice max-w-4xl mx-auto">
         {title}
       </h2>
     </div>
@@ -483,7 +471,7 @@ function Card({
 }) {
   return (
     <div
-      className={`relative rounded-2xl p-10 overflow-hidden ${
+      className={`relative rounded-2xl p-8 sm:p-10 lg:p-12 overflow-hidden ${
         variant === "fix"
           ? "gradient-border bg-panel/60 backdrop-blur-sm"
           : "border border-line bg-panel/30"
@@ -495,7 +483,7 @@ function Card({
           className="absolute -top-20 -right-20 w-72 h-72 glow-orb opacity-50"
         />
       )}
-      <div className="relative">{children}</div>
+      <div className="relative h-full text-center">{children}</div>
     </div>
   );
 }
@@ -537,15 +525,15 @@ function HeroStat({
   highlight?: boolean;
 }) {
   return (
-    <div className="px-6 py-7">
+    <div className="px-6 py-5 sm:py-7 text-center sm:text-left">
       <div
-        className={`font-display text-4xl leading-none mb-1 ${
+        className={`font-display text-3xl sm:text-4xl leading-none mb-1 ${
           highlight ? "text-brand-gradient" : "text-ice"
         }`}
       >
         {n}
       </div>
-      <div className="font-mono text-[10px] text-ice/40 uppercase tracking-[0.2em]">
+      <div className="font-mono text-[10px] text-ice/40 uppercase tracking-[0.16em]">
         {l}
       </div>
     </div>

@@ -1,5 +1,5 @@
 sdk-version: 2.10.3
-name: canton-payroll
+name: cantonpay
 source: daml
 version: 0.1.0
 dependencies:

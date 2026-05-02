@@ -13,7 +13,7 @@ const display = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "Canton Payroll — Confidential payroll rails",
+  title: "CantonPay — Confidential payroll rails",
   description:
     "Employer and employee payroll on Canton: Daml templates, JSON API, and a dashboard UI for treasury, roster, and payroll runs.",
 };

@@ -8,7 +8,7 @@ export const LEDGER_ID =
   process.env.NEXT_PUBLIC_CANTON_LEDGER_ID ?? "sandbox";
 
 export const APPLICATION_ID =
-  process.env.NEXT_PUBLIC_CANTON_APPLICATION_ID ?? "canton-payroll";
+  process.env.NEXT_PUBLIC_CANTON_APPLICATION_ID ?? "cantonpay";
 
 export function templateId(templateName: string): string {
   if (DAML_PACKAGE_ID) {

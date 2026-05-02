@@ -122,7 +122,7 @@ export function DashboardView({
                         <Shield size={24} />
                     </div>
                     <div>
-                        <h3 style={{ margin: 0, fontSize: '16px', color: 'var(--text-primary)' }}>Canton payroll</h3>
+                        <h3 style={{ margin: 0, fontSize: '16px', color: 'var(--text-primary)' }}>CantonPay</h3>
                         <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
                             Visibility follows Daml signatories and observers on the Canton ledger.
                             Salary fields are Decimal in the templates; refine privacy in Daml as needed.

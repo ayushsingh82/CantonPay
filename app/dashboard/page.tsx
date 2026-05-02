@@ -111,7 +111,7 @@ export default function DashboardPage() {
                       color: "var(--text-primary)",
                     }}
                   >
-                    Canton Payroll
+                    CantonPay
                   </h3>
                   <p
                     style={{

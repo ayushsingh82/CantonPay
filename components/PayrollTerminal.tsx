@@ -88,7 +88,7 @@ export function PayrollTerminal({ isOpen, onClose, ledgerSummary, isLive }: Payr
                     <div className="terminal-dot red" />
                     <div className="terminal-dot yellow" />
                     <div className="terminal-dot green" />
-                    <span className="terminal-title">canton-payroll — executor {isLive ? '(live)' : '(demo)'}</span>
+                    <span className="terminal-title">CantonPay — executor {isLive ? '(live)' : '(demo)'}</span>
                 </div>
                 <div className="terminal-body" ref={bodyRef}>
                     {lines.map((line, i) => (

@@ -79,9 +79,7 @@ export function Sidebar({ activeTab, onTabChange, partyId, onLogout, isEmployer 
     return (
         <aside className="sidebar">
             <Link href="/" className="sidebar-logo" style={{ textDecoration: 'none', cursor: 'pointer' }}>
-                <h1>
-                    CANTON<span>.</span>
-                </h1>
+                <h1>CantonPay</h1>
                 <div className="subtitle">Payroll · Daml</div>
             </Link>
 

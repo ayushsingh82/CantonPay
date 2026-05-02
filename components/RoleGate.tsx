@@ -18,9 +18,7 @@ export function RoleGate({ children }: RoleGateProps) {
   return (
     <div className="role-gate">
       <div className="role-gate-card">
-        <div className="role-gate-logo">
-          CANTON<span>.</span>
-        </div>
+        <div className="role-gate-logo">CantonPay</div>
         <p className="role-gate-subtitle">
           Canton Ledger · party login (JSON API)
         </p>
