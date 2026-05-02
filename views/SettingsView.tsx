@@ -8,10 +8,10 @@ import { useState } from "react";
 interface SettingsViewProps {
   address: string;
   role: "Employer" | "Employee";
-  contractAddress: string;
+  orgContractId: string;
 }
 
-export function SettingsView({ address, role, contractAddress }: SettingsViewProps) {
+export function SettingsView({ address, role, orgContractId }: SettingsViewProps) {
   const { logout } = useCantonAuth();
   const [copied, setCopied] = useState(false);
 
@@ -23,7 +23,7 @@ export function SettingsView({ address, role, contractAddress }: SettingsViewPro
 
   const inviteLink =
     typeof window !== "undefined"
-      ? `${window.location.origin}/org/${contractAddress}`
+      ? `${window.location.origin}/org/${orgContractId}`
       : "";
 
   return (

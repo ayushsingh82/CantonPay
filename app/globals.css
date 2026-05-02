@@ -5,7 +5,7 @@
   color-scheme: dark;
 }
 
-/* Align Tailwind v4 @theme with AgentCron / agent-corn palette */
+/* Tailwind v4 @theme — ice/navy app palette */
 @theme inline {
   --color-bg: #040814;
   --color-surface: #070d1f;
@@ -18,7 +18,7 @@
   --color-sky: #4988c4;
   --color-ice: #bde8f5;
   --color-accent: #4988c4;
-  /* Match agent-corn tailwind `bg-brand-fade` */
+  /* Gradient used by `bg-brand-fade` utility */
   --background-image-brand-fade: linear-gradient(135deg, #4988c4 0%, #bde8f5 100%);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);

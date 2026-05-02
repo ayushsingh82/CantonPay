@@ -8,23 +8,22 @@ interface TerminalStep {
 }
 
 const DEMO_STEPS: TerminalStep[] = [
-    { text: 'Initializing FHEVM instance...', duration: 800 },
-    { text: 'Fetching employee roster...', duration: 600 },
-    { text: 'Encrypting salary batch via coprocessor...', duration: 1400 },
-    { text: 'Building transaction calldata...', duration: 500 },
-    { text: 'Submitting tx to Sepolia...', duration: 1200 },
-    { text: 'Awaiting coprocessor confirmation...', duration: 1800 },
-    { text: 'Block confirmed ✓', duration: 400 },
+    { text: 'Resolving party session (JSON API actAs)…', duration: 500 },
+    { text: 'Fetching PayrollOrganization + employment contracts…', duration: 700 },
+    { text: 'Exercising RunPayroll choice…', duration: 1000 },
+    { text: 'Command accepted by participant…', duration: 800 },
+    { text: 'Ledger update committed ✓', duration: 400 },
 ];
 
 interface PayrollTerminalProps {
     isOpen: boolean;
     onClose: () => void;
-    txHash?: string | null;
+    /** Truncated JSON API exercise response, if any. */
+    ledgerSummary?: string | null;
     isLive?: boolean;
 }
 
-export function PayrollTerminal({ isOpen, onClose, txHash, isLive }: PayrollTerminalProps) {
+export function PayrollTerminal({ isOpen, onClose, ledgerSummary, isLive }: PayrollTerminalProps) {
     const [lines, setLines] = useState<string[]>([]);
     const [isComplete, setIsComplete] = useState(false);
     const [showCursor, setShowCursor] = useState(true);
@@ -43,13 +42,16 @@ export function PayrollTerminal({ isOpen, onClose, txHash, isLive }: PayrollTerm
 
         const steps = [...DEMO_STEPS];
 
-        // If there's a real tx hash, replace the last step
-        if (txHash) {
-            steps.push({ text: `Tx: ${txHash.slice(0, 10)}...${txHash.slice(-8)}`, duration: 0 });
+        if (ledgerSummary) {
+            const s = String(ledgerSummary);
+            steps.push({
+                text: `Last response: ${s.length > 72 ? `${s.slice(0, 72)}…` : s}`,
+                duration: 0,
+            });
         }
 
         if (!isLive) {
-            steps.push({ text: '(Demo mode — connect wallet for live execution)', duration: 0 });
+            steps.push({ text: '(Demo — set NEXT_PUBLIC_CANTON_JSON_API_URL for a live ledger)', duration: 0 });
         }
 
         const runStep = () => {
@@ -69,7 +71,7 @@ export function PayrollTerminal({ isOpen, onClose, txHash, isLive }: PayrollTerm
         timeout = setTimeout(runStep, 400);
 
         return () => clearTimeout(timeout);
-    }, [isOpen, txHash, isLive]);
+    }, [isOpen, ledgerSummary, isLive]);
 
     useEffect(() => {
         if (bodyRef.current) {

@@ -94,8 +94,8 @@ export function AddEmployeeModal({
             }}
           >
             Canton allocates a party if you pass a short hint (sandbox). Salary is
-            stored on the EmploymentContract in plain Decimal — visibility is
-            limited by Daml observers, not FHEVM.
+            stored on the EmploymentContract as Decimal; visibility is whatever your
+            Daml observers allow.
           </p>
         </div>
 

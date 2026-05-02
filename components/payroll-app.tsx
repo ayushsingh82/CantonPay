@@ -28,14 +28,14 @@ function isLikelyOrgId(id: string) {
 export function PayrollApp() {
   const params = useParams<{ contractAddress: string }>();
   const orgContractId = params.contractAddress as string;
-  const { partyId, token, login, logout } = useCantonAuth();
+  const { partyId, token, logout } = useCantonAuth();
 
   const payroll = usePayroll(orgContractId);
 
   const isEmployer = useMemo(
     () =>
-      !!(partyId && payroll.rawOrg?.payload.employer === partyId),
-    [partyId, payroll.rawOrg],
+      !!(partyId && payroll.organization?.payload.employer === partyId),
+    [partyId, payroll.organization],
   );
 
   const isEmployee = useMemo(
@@ -56,7 +56,7 @@ export function PayrollApp() {
   const [activeTab, setActiveTab] = useState("dashboard");
 
   const handleRunPayroll = async () => {
-    if (!isEmployer || payroll.isTxPending) return;
+    if (!isEmployer || payroll.isPending) return;
     setIsPayrollConfirmOpen(true);
   };
 
@@ -96,7 +96,7 @@ export function PayrollApp() {
     return <RoleGate>{null}</RoleGate>;
   }
 
-  if (payroll.isLoadingEmployees && !payroll.rawOrg && payroll.employmentRows.length === 0) {
+  if (payroll.isLoading && !payroll.organization && payroll.employmentRows.length === 0) {
     return (
       <div
         className="app-layout"
@@ -129,17 +129,13 @@ export function PayrollApp() {
       <Sidebar
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        wallet={{
-          address: partyId ?? undefined,
-          isConnected: !!partyId,
-          isConnecting: false,
-          connect: () => login("Employer"),
-          disconnect: logout,
-        }}
+        partyId={partyId}
+        onLogout={logout}
         isEmployer={isEmployer}
       />
 
       <main className="main-content">
+        <div className="main-content-panel">
         {activeTab === "dashboard" && (
           <DashboardView
             treasuryBalance={treasuryBalance}
@@ -147,7 +143,7 @@ export function PayrollApp() {
             isDecryptingTreasury={false}
             employeeCount={payroll.employeeAddresses.length}
             lastPayroll={
-              payroll.rawOrg?.payload.lastPayrollRun
+              payroll.organization?.payload.lastPayrollRun
                 ? "Recorded"
                 : "—"
             }
@@ -157,8 +153,8 @@ export function PayrollApp() {
             onRunPayroll={handleRunPayroll}
             onAddEmployee={() => setIsAddModalOpen(true)}
             onFundTreasury={() => setIsFundModalOpen(true)}
-            isPayrollRunning={payroll.isTxPending}
-            contractAddress={orgContractId as `0x${string}`}
+            isPayrollRunning={payroll.isPending}
+            orgContractId={orgContractId}
             payrollCooldown={payroll.payrollCooldown}
             lastPayrollRun={payroll.lastPayrollRun}
           />
@@ -170,9 +166,9 @@ export function PayrollApp() {
             addresses={payroll.employeeAddresses}
             isEmployer={isEmployer}
             onRemove={payroll.removeEmployee}
-            isLoading={payroll.isLoadingEmployees}
+            isLoading={payroll.isLoading}
             walletAddress={partyId || ""}
-            contractAddress={orgContractId}
+            orgContractId={orgContractId}
             onAddClick={() => setIsAddModalOpen(true)}
             onRunPayroll={handleRunPayroll}
             payrollCooldown={payroll.payrollCooldown}
@@ -181,20 +177,21 @@ export function PayrollApp() {
         )}
 
         {activeTab === "transactions" && (
-          <TransactionsView contractAddress={orgContractId as `0x${string}`} />
+          <TransactionsView orgContractId={orgContractId} />
         )}
 
         {activeTab === "settings" && (
           <SettingsView
             address={partyId || ""}
             role={isEmployer ? "Employer" : "Employee"}
-            contractAddress={orgContractId as `0x${string}`}
+            orgContractId={orgContractId}
           />
         )}
 
         {activeTab === "payslips" && (
           <PayslipsView />
         )}
+        </div>
 
         <BalanceCard
           walletAddress={partyId || ""}
@@ -214,7 +211,7 @@ export function PayrollApp() {
       <PayrollTerminal
         isOpen={isTerminalOpen}
         onClose={() => setIsTerminalOpen(false)}
-        txHash={payroll.txHash}
+        ledgerSummary={payroll.lastLedgerResponse}
         isLive={true}
       />
 
@@ -237,7 +234,7 @@ export function PayrollApp() {
         onClose={() => setIsPayrollConfirmOpen(false)}
         onConfirm={executePayroll}
         employeeCount={payroll.employeeAddresses.length}
-        isProcessing={payroll.isTxPending}
+        isProcessing={payroll.isPending}
       />
     </div>
   );

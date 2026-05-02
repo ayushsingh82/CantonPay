@@ -15,7 +15,7 @@ const display = Instrument_Serif({
 export const metadata: Metadata = {
   title: "Canton Payroll — Confidential payroll rails",
   description:
-    "Employer and employee payroll dashboard styled for Canton Network, with the same layout as Nzuzo confidential payroll (Sepolia + FHE dev stack).",
+    "Employer and employee payroll on Canton: Daml templates, JSON API, and a dashboard UI for treasury, roster, and payroll runs.",
 };
 
 export default function RootLayout({

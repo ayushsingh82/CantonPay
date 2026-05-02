@@ -1,16 +1,16 @@
 "use client";
 
-import type { EmploymentContractPayload } from "@/lib/payroll-types";
+import type { EmploymentContractPayload } from "@/lib/canton";
 import { EmployeeTable } from "./EmployeeTable";
 
 interface EmployeeListProps {
   employmentRows: { cid: string; payload: EmploymentContractPayload }[];
   addresses: string[];
   isEmployer: boolean;
-  onRemove: (employmentCid: string) => Promise<string>;
+  onRemove: (employmentCid: string) => Promise<void>;
   isLoading: boolean;
   walletAddress: string;
-  contractAddress: string;
+  orgContractId: string;
 }
 
 export function EmployeeList({
@@ -20,7 +20,7 @@ export function EmployeeList({
   onRemove,
   isLoading,
   walletAddress,
-  contractAddress,
+  orgContractId,
 }: EmployeeListProps) {
   const handleFire = async (employmentCid: string) => {
     try {
@@ -31,14 +31,16 @@ export function EmployeeList({
   };
 
   return (
-    <EmployeeTable
-      employmentRows={employmentRows}
-      addresses={addresses}
-      isEmployer={isEmployer}
-      isLoading={isLoading}
-      onFire={handleFire}
-      walletAddress={walletAddress}
-      contractAddress={contractAddress}
-    />
+    <div className="employee-list-root">
+      <EmployeeTable
+        employmentRows={employmentRows}
+        addresses={addresses}
+        isEmployer={isEmployer}
+        isLoading={isLoading}
+        onFire={handleFire}
+        walletAddress={walletAddress}
+        orgContractId={orgContractId}
+      />
+    </div>
   );
 }

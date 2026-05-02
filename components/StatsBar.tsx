@@ -77,7 +77,7 @@ export function StatsBar({
                         )}
                     </div>
                 </div>
-                <div className="stat-meta">ConfidentialERC20 • mUSDC</div>
+                <div className="stat-meta">Org treasury (Daml Decimal)</div>
             </div>
 
             <div className="stat-card">
@@ -86,7 +86,7 @@ export function StatsBar({
                     {employeeCount}
                     <span className="unit">registered</span>
                 </div>
-                <div className="stat-meta">FHE-encrypted salaries</div>
+                <div className="stat-meta">Salaries on EmploymentContract</div>
             </div>
 
             <div className="stat-card">
@@ -94,7 +94,7 @@ export function StatsBar({
                 <div className="stat-value" style={{ fontSize: '18px' }}>
                     {lastPayroll}
                 </div>
-                <div className="stat-meta">Auto-encrypted batch tx</div>
+                <div className="stat-meta">RunPayroll choice (ledger time)</div>
             </div>
         </div>
     );

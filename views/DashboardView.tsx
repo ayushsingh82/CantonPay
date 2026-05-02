@@ -18,7 +18,7 @@ interface DashboardViewProps {
     onAddEmployee: () => void;
     onFundTreasury: () => void;
     isPayrollRunning: boolean;
-    contractAddress: string;
+    orgContractId: string;
     payrollCooldown?: bigint;
     lastPayrollRun?: bigint;
 }
@@ -36,19 +36,19 @@ export function DashboardView({
     onAddEmployee,
     onFundTreasury,
     isPayrollRunning,
-    contractAddress,
+    orgContractId,
     payrollCooldown,
     lastPayrollRun,
 }: DashboardViewProps) {
     const [copied, setCopied] = useState(false);
 
     const handleCopy = () => {
-        navigator.clipboard.writeText(contractAddress);
+        navigator.clipboard.writeText(orgContractId);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
 
-    const shortAddress = `${contractAddress.slice(0, 6)}...${contractAddress.slice(-4)}`;
+    const shortAddress = `${orgContractId.slice(0, 6)}...${orgContractId.slice(-4)}`;
 
     return (
         <>
@@ -91,8 +91,8 @@ export function DashboardView({
                     <div>
                         <h3 style={{ margin: 0, fontSize: '16px', color: 'var(--text-primary)' }}>Canton payroll</h3>
                         <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                            Visibility follows Daml signatories and observers on the Canton ledger — not FHEVM or zk rollups on Ethereum.
-                            Salary fields are plain Decimal in templates; privacy is party-based.
+                            Visibility follows Daml signatories and observers on the Canton ledger.
+                            Salary fields are Decimal in the templates; refine privacy in Daml as needed.
                         </p>
                     </div>
                 </div>

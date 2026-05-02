@@ -1,4 +1,4 @@
-/** Built DAR package id — set after `daml build`, or NEXT_PUBLIC_DAML_PACKAGE_ID for JSON API template IDs. */
+/** Built DAR package id — set after `daml build`, or `NEXT_PUBLIC_DAML_PACKAGE_ID` for JSON API template IDs. */
 export const DAML_PACKAGE_ID =
   process.env.NEXT_PUBLIC_DAML_PACKAGE_ID ?? "";
 

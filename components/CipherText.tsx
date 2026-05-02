@@ -13,7 +13,7 @@ interface CipherTextProps {
 }
 
 export function CipherText({ value, revealed, onToggle }: CipherTextProps) {
-    const [displayText, setDisplayText] = useState('[ENCRYPTED]');
+    const [displayText, setDisplayText] = useState('••••');
     const [isAnimating, setIsAnimating] = useState(false);
 
     const scrambleReveal = useCallback(() => {
@@ -70,7 +70,7 @@ export function CipherText({ value, revealed, onToggle }: CipherTextProps) {
 
             if (iteration > SCRAMBLE_ITERATIONS) {
                 clearInterval(interval);
-                setDisplayText('[ENCRYPTED]');
+                setDisplayText('••••');
                 setIsAnimating(false);
             }
         }, SCRAMBLE_INTERVAL);
@@ -79,19 +79,19 @@ export function CipherText({ value, revealed, onToggle }: CipherTextProps) {
     useEffect(() => {
         if (revealed) {
             scrambleReveal();
-        } else if (displayText !== '[ENCRYPTED]' && !isAnimating) {
+        } else if (displayText !== '••••' && !isAnimating) {
             scrambleHide();
         }
     }, [revealed]);
 
-    if (!revealed && displayText === '[ENCRYPTED]') {
+    if (!revealed && displayText === '••••') {
         return (
             <span className="encrypted-badge" onClick={onToggle}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                     <path d="m7 11 0-4a5 5 0 0 1 10 0l0 4" />
                 </svg>
-                ENCRYPTED
+                Hidden
             </span>
         );
     }

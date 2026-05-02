@@ -1,6 +1,6 @@
 "use client";
 
-import type { EmploymentContractPayload } from "@/lib/payroll-types";
+import type { EmploymentContractPayload } from "@/lib/canton";
 import { EmployeeList } from "@/components/EmployeeList";
 import { Plus } from "lucide-react";
 
@@ -8,10 +8,10 @@ interface EmployeesViewProps {
   employmentRows: { cid: string; payload: EmploymentContractPayload }[];
   addresses: string[];
   isEmployer: boolean;
-  onRemove: (employmentCid: string) => Promise<string>;
+  onRemove: (employmentCid: string) => Promise<void>;
   isLoading: boolean;
   walletAddress: string;
-  contractAddress: string;
+  orgContractId: string;
   onAddClick: () => void;
   onRunPayroll: () => void;
   payrollCooldown?: bigint;
@@ -25,7 +25,7 @@ export function EmployeesView({
   onRemove,
   isLoading,
   walletAddress,
-  contractAddress,
+  orgContractId,
   onAddClick,
   onRunPayroll,
   payrollCooldown,
@@ -40,7 +40,8 @@ export function EmployeesView({
   const getRemainingTime = () => {
     if (!isCooldownActive) return "";
     const nextTime =
-      Number(lastPayrollRun || 0n) + Number(payrollCooldown || 0n);
+      Number(lastPayrollRun ?? BigInt(0)) +
+      Number(payrollCooldown ?? BigInt(0));
     const diff = nextTime - Math.floor(Date.now() / 1000);
     if (diff <= 0) return "";
 
@@ -114,7 +115,7 @@ export function EmployeesView({
         onRemove={onRemove}
         isLoading={isLoading}
         walletAddress={walletAddress}
-        contractAddress={contractAddress}
+        orgContractId={orgContractId}
       />
     </div>
   );

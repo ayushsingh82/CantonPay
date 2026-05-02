@@ -1,18 +1,11 @@
 /**
- * Canton Ledger JSON API client (same HTTP surface as Slinky / daml json-api).
+ * Canton Ledger JSON API (create / query / exercise / fetch), JWT helpers.
  * @see https://docs.daml.com/json-api/index.html
  */
 
-import {
-  APPLICATION_ID,
-  LEDGER_ID,
-  templateId,
-} from "@/lib/daml-config";
+import { APPLICATION_ID, LEDGER_ID, templateId } from "./config";
 
-const CANTON_API =
-  typeof window !== "undefined"
-    ? process.env.NEXT_PUBLIC_CANTON_JSON_API_URL ?? ""
-    : process.env.NEXT_PUBLIC_CANTON_JSON_API_URL ?? "";
+const CANTON_API = process.env.NEXT_PUBLIC_CANTON_JSON_API_URL ?? "";
 
 function base64url(str: string): string {
   if (typeof window === "undefined") {

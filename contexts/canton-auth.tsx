@@ -13,7 +13,7 @@ import {
   allocateParty,
   partyToken,
   clearPartyCache,
-} from "@/lib/canton-client";
+} from "@/lib/canton";
 
 type CantonAuthState = {
   partyId: string | null;

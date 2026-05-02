@@ -1,6 +1,6 @@
 "use client";
 
-import type { EmploymentContractPayload } from "@/lib/payroll-types";
+import type { EmploymentContractPayload } from "@/lib/canton";
 
 interface EmployeeTableProps {
   employmentRows: { cid: string; payload: EmploymentContractPayload }[];
@@ -9,7 +9,7 @@ interface EmployeeTableProps {
   isLoading: boolean;
   onFire: (employmentCid: string) => void;
   walletAddress: string;
-  contractAddress: string;
+  orgContractId: string;
 }
 
 export function EmployeeTable({
@@ -19,7 +19,7 @@ export function EmployeeTable({
   isLoading,
   onFire,
   walletAddress,
-  contractAddress,
+  orgContractId,
 }: EmployeeTableProps) {
   if (isLoading) {
     return (
@@ -49,7 +49,7 @@ export function EmployeeTable({
       : addresses.map((a) => ({
           cid: "",
           payload: {
-            payrollOrgCid: contractAddress,
+            payrollOrgCid: orgContractId,
             employer: "",
             operator: "",
             employee: a,

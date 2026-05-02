@@ -25,8 +25,8 @@ export function RoleGate({ children }: RoleGateProps) {
           Canton Ledger · party login (JSON API)
         </p>
         <p className="role-gate-desc">
-          Allocate or reconnect a Daml party via the sandbox JSON API. Salary
-          visibility follows Daml observers — not FHEVM or zk proofs on EVM.
+          Allocate or reconnect a Daml party via the sandbox JSON API. What each
+          party sees follows signatories and observers in your Daml model.
         </p>
         <label className="form-label" style={{ marginBottom: 8, display: "block" }}>
           Party hint

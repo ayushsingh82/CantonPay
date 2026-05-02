@@ -8,8 +8,8 @@ import {
   allocateParty,
   partyToken,
   createContract,
-} from "@/lib/canton-client";
-import type { PayrollOrganizationPayload } from "@/lib/payroll-types";
+  type PayrollOrganizationPayload,
+} from "@/lib/canton";
 import { Loader2 } from "lucide-react";
 
 export function CantonLanding() {
@@ -128,9 +128,9 @@ export function CantonLanding() {
           </h1>
 
           <p className="font-sans text-base md:text-lg text-ice/55 leading-relaxed max-w-xl mx-auto mb-10 animate-fade-up [animation-delay:240ms]">
-            Nzuzo-style dashboard shell with AgentCorn styling. Business logic lives in{" "}
+            Dashboard shell for payroll operators and employees. Business logic lives in{" "}
             <code className="font-mono text-sky/90">daml/Payroll.daml</code> — parties,
-            observers, and choices — not FHEVM or zkVM on Ethereum.
+            observers, and choices exercised through the Canton JSON API.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-3 mb-20 animate-fade-up [animation-delay:360ms]">
@@ -154,7 +154,7 @@ export function CantonLanding() {
               <div className="grid grid-cols-3 divide-x divide-line">
                 <HeroStat n="Daml" l="contracts" />
                 <HeroStat n="CN" l="json api" highlight />
-                <HeroStat n="UI" l="nzuzo layout" />
+                <HeroStat n="UI" l="dashboard" />
               </div>
             </div>
           </div>
@@ -190,22 +190,22 @@ export function CantonLanding() {
               <>
                 Parties and templates —{" "}
                 <em className="font-display italic text-brand-gradient">
-                  not global EVM state.
+                  one canonical ledger.
                 </em>
               </>
             }
           />
           <div className="grid md:grid-cols-2 gap-4 mt-12">
             <Card variant="problem">
-              <CardKicker tone="bad">evm stack</CardKicker>
+              <CardKicker tone="bad">typical silos</CardKicker>
               <h3 className="font-display text-3xl text-ice mb-6 leading-tight">
-                FHEVM demos leak complexity into the browser.
+                Payroll truth scattered across spreadsheets and SaaS tools.
               </h3>
               <ul className="space-y-3">
                 {[
-                  "MetaMask + Sepolia unrelated to Canton participants",
-                  "Encrypted handles require WASM relayers",
-                  "Payroll semantics encoded in Solidity ABIs",
+                  "No single contract that both HR and finance can agree on",
+                  "Weak audit trail for who approved salary or roster changes",
+                  "Exports and emails instead of a participant-backed ledger",
                 ].map((item) => (
                   <li
                     key={item}

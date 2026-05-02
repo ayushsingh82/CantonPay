@@ -22,7 +22,8 @@ export function ActionZone({
 
     const getRemainingTime = () => {
         if (!isCooldownActive) return '';
-        const nextTime = Number(lastPayrollRun || 0n) + Number(payrollCooldown || 0n);
+        const nextTime =
+            Number(lastPayrollRun ?? BigInt(0)) + Number(payrollCooldown ?? BigInt(0));
         const diff = nextTime - Math.floor(Date.now() / 1000);
         if (diff <= 0) return '';
 
@@ -61,7 +62,7 @@ export function ActionZone({
 
             <span className="action-status">
                 {employeeCount > 0
-                    ? `${employeeCount} employee${employeeCount !== 1 ? 's' : ''} • FHE batch ready`
+                    ? `${employeeCount} employee${employeeCount !== 1 ? 's' : ''} • ready for RunPayroll`
                     : 'No employees registered'}
             </span>
         </div>

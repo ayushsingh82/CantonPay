@@ -1,36 +1,104 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# canton-payroll
 
-## Getting Started
+## What we’re building
 
-First, run the development server:
+**canton-payroll** is a web frontend for **employer–employee payroll on Canton**: a dashboard-style shell (sidebar, stats rail, roster table, action zone) with an ice/navy visual theme. The **source of truth is Daml** on the ledger, not an EVM chain.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+You model organizations and employment lines in **`daml/Payroll.daml`** (`PayrollOrganization`, `EmploymentContract`). This Next.js app talks to your participant through the **Ledger JSON API**: create/query contracts, exercise choices (`RunPayroll`, `AddEmployee`, etc.), and drive the UI from ledger state.
+
+There is **no wagmi, viem, ethers, or FHEVM** stack here; authentication is **party-based** (JSON API JWT with `actAs`), aligned with how Canton sandboxes and deployments expose HTTP APIs.
+
+---
+
+## How it works (end-to-end)
+
+1. **Landing** (`/`) — Marketing-style page; user pastes a **PayrollOrganization** ledger contract id and opens `/org/[id]`, or spawns a **demo org** (allocate parties + create contract) when `NEXT_PUBLIC_CANTON_JSON_API_URL` is set.
+2. **Org app** (`/org/[contractAddress]`) — Loads **`PayrollApp`**. Without JSON API URL configured, the user sees configuration guidance.
+3. **Party login** — **`CantonAuthProvider`** resolves a party from a **hint** via `allocateParty` / reuse (sandbox JSON API). Session holds **party id** in `sessionStorage`; **`partyToken(partyId)`** builds the JWT used as **Bearer** on ledger calls (`actAs` + `readAs` that party).
+4. **Data** — **`usePayroll(orgContractId)`** calls **`lib/canton/payroll-ledger.ts`**: query employment contracts for that org, fetch the org contract, expose treasury, roster, cooldowns, and mutation helpers.
+5. **Actions** — Buttons exercise Daml choices (`RunPayroll`, `AddEmployee`, `RemoveEmployee`, `UpdateTreasuryFromEmployer`) through **`json-api-client`** (`/v1/exercise`, etc.).
+
+---
+
+## Repository structure
+
+High-level map (only the parts that matter for Canton + UI):
+
+```text
+app/
+  layout.tsx              # Root layout, fonts, Providers
+  page.tsx                # Landing (CantonLanding)
+  globals.css             # Tailwind + theme tokens
+  org/[contractAddress]/  # Dynamic org route → PayrollApp
+    page.tsx
+
+components/               # UI: sidebar, stats, modals, tables, landing
+contexts/
+  canton-auth.tsx         # Party session + token for JSON API
+
+hooks/
+  usePayroll.ts           # React state + org roster; calls lib/canton
+
+lib/canton/
+  config.ts               # DAML package id, ledgerId, app id, templateId()
+  types.ts                # JSON API payload shapes (Payroll module)
+  json-api-client.ts      # JWT helpers; create / query / exercise / fetch
+  payroll-ledger.ts       # Payroll-specific ledger operations (no React)
+  index.ts                # Barrel exports
+
+daml/                     # Daml sources (e.g. Payroll.daml)
+styles/
+  payroll-ui.css          # Dashboard shell (sidebar, stats, tables, modals)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**Dependency direction:** UI and hooks depend on **`lib/canton`**; **`payroll-ledger.ts`** depends on **`json-api-client.ts`** and **`types.ts`**, not on React. That keeps ledger logic testable and portable.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Prerequisites
 
-## Learn More
+- Node 20+
+- Daml SDK (for `daml build` and package id)
+- A Canton participant with **JSON API** enabled (local sandbox or remote)
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Environment
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Create `.env.local`:
 
-## Deploy on Vercel
+| Variable | Purpose |
+|----------|---------|
+| `NEXT_PUBLIC_CANTON_JSON_API_URL` | Base URL of the Ledger JSON API (e.g. `http://localhost:7575`) |
+| `NEXT_PUBLIC_DAML_PACKAGE_ID` | Package id from `daml build` / `.dar` metadata |
+| `NEXT_PUBLIC_CANTON_LEDGER_ID` | Optional; defaults in `lib/canton/config.ts` if unset |
+| `NEXT_PUBLIC_CANTON_APPLICATION_ID` | Optional application id for multi-app deployments |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The client uses **unsigned dev-style JWTs** in code paths suitable for sandbox demos. **Production** deployments should issue **properly signed** JWTs from your IdP or participant docs; swap or extend the helpers in `json-api-client.ts` when you harden auth.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## Daml
+
+- **Module:** `Payroll` (`daml/Payroll.daml`)
+- **Templates:** `PayrollOrganization`, `EmploymentContract`
+- **Build:** `daml build`, then set **`NEXT_PUBLIC_DAML_PACKAGE_ID`** to the built package id so JSON API **template IDs** resolve correctly.
+
+---
+
+## Frontend
+
+```bash
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000): landing page; join an org by pasting a **PayrollOrganization** contract id, or use **Spawn demo org** when the JSON API URL is configured.
+
+---
+
+## Scripts
+
+- `npm run dev` — Next.js dev server
+- `npm run build` — production build
+- `npm run lint` — ESLint

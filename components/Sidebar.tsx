@@ -1,17 +1,11 @@
-interface WalletState {
-    address?: string;
-    isConnected: boolean;
-    isConnecting: boolean;
-    connect: () => void;
-    disconnect: () => void;
-}
-
 'use client';
 
 interface SidebarProps {
     activeTab: string;
     onTabChange: (tab: string) => void;
-    wallet: WalletState;
+    /** Logged-in Daml party (Canton JSON API session). */
+    partyId: string | null;
+    onLogout: () => void;
     isEmployer: boolean;
 }
 
@@ -76,21 +70,23 @@ const PAYSLIP_NAV_ITEM = {
     ),
 };
 
-const truncateAddress = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+const truncateParty = (id: string) =>
+    id.length > 18 ? `${id.slice(0, 10)}…${id.slice(-6)}` : id;
 
-export function Sidebar({ activeTab, onTabChange, wallet, isEmployer }: SidebarProps) {
+export function Sidebar({ activeTab, onTabChange, partyId, onLogout, isEmployer }: SidebarProps) {
     return (
         <aside className="sidebar">
             <div className="sidebar-logo">
                 <h1>
                     CANTON<span>.</span>
                 </h1>
-                <div className="subtitle">Payroll · Confidential</div>
+                <div className="subtitle">Payroll · Daml</div>
             </div>
 
             <nav className="sidebar-nav">
                 {NAV_ITEMS.map(item => (
                     <button
+                        type="button"
                         key={item.id}
                         className={`nav-item ${activeTab === item.id ? 'active' : ''}`}
                         onClick={() => onTabChange(item.id)}
@@ -101,6 +97,7 @@ export function Sidebar({ activeTab, onTabChange, wallet, isEmployer }: SidebarP
                 ))}
                 {!isEmployer && (
                     <button
+                        type="button"
                         key={PAYSLIP_NAV_ITEM.id}
                         className={`nav-item ${activeTab === PAYSLIP_NAV_ITEM.id ? 'active' : ''}`}
                         onClick={() => onTabChange(PAYSLIP_NAV_ITEM.id)}
@@ -112,37 +109,26 @@ export function Sidebar({ activeTab, onTabChange, wallet, isEmployer }: SidebarP
             </nav>
 
             <div className="sidebar-footer">
-                {wallet.isConnected ? (
-                    <>
-                        <div className="network-badge" style={{ marginBottom: '8px' }}>
-                            <div className="network-dot" />
-                            Sepolia · Dev stack
-                        </div>
-                        <button
-                            className="nav-item"
-                            onClick={wallet.disconnect}
-                            style={{ fontSize: '11px', padding: '6px 10px' }}
-                        >
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '14px', height: '14px' }}>
-                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                                <path d="M7 11V7a5 5 0 0 1 9.9-1" />
-                            </svg>
-                            {truncateAddress(wallet.address || '')}
-                        </button>
-                    </>
-                ) : (
+                <div className="network-badge" style={{ marginBottom: '8px' }}>
+                    <div className="network-dot" />
+                    Canton · JSON API
+                </div>
+                {partyId ? (
                     <button
-                        className="btn btn-primary"
-                        onClick={wallet.connect}
-                        disabled={wallet.isConnecting}
-                        style={{ width: '100%', fontSize: '12px', padding: '8px 12px' }}
+                        type="button"
+                        className="nav-item"
+                        onClick={onLogout}
+                        style={{ fontSize: '11px', padding: '6px 10px', width: '100%' }}
+                        title={partyId}
                     >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: '14px', height: '14px' }}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '14px', height: '14px', flexShrink: 0 }}>
                             <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                            <path d="m7 11 0-4a5 5 0 0 1 10 0l0 4" />
+                            <path d="M7 11V7a5 5 0 0 1 9.9-1" />
                         </svg>
-                        {wallet.isConnecting ? 'Connecting...' : 'Connect Wallet'}
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{truncateParty(partyId)}</span>
                     </button>
+                ) : (
+                    <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>No party session</span>
                 )}
             </div>
         </aside>
