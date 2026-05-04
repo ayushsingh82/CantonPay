@@ -4,8 +4,9 @@
  */
 
 import { APPLICATION_ID, LEDGER_ID, templateId } from "./config";
+import { cantonJsonApiBaseUrl } from "./env";
 
-const CANTON_API = process.env.NEXT_PUBLIC_CANTON_JSON_API_URL ?? "";
+const CANTON_API = cantonJsonApiBaseUrl();
 
 function base64url(str: string): string {
   if (typeof window === "undefined") {

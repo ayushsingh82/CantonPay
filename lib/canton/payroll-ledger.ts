@@ -5,6 +5,7 @@ import type {
   EmploymentContractPayload,
   PayrollOrganizationPayload,
 } from "./types";
+import { toDamlDecimalString } from "./daml-decimal";
 import {
   allocateParty,
   createContract,
@@ -24,10 +25,6 @@ export type EmploymentContractRow = {
   cid: string;
   payload: EmploymentContractPayload;
 };
-
-export function cantonJsonApiConfigured(): boolean {
-  return Boolean(process.env.NEXT_PUBLIC_CANTON_JSON_API_URL);
-}
 
 export function parseLastPayrollInstant(iso: string): bigint {
   if (!iso) return BigInt(0);
@@ -92,7 +89,7 @@ export async function addEmployeeChoice(
     "AddEmployee",
     {
       employee: employeeParty,
-      salary: String(salaryAmount),
+      salary: toDamlDecimalString(salaryAmount),
       payrollOrgCid: orgContractId,
     },
     token,
@@ -121,7 +118,7 @@ export async function updateTreasuryChoice(
     "PayrollOrganization",
     orgCid,
     "UpdateTreasuryFromEmployer",
-    { newBalance },
+    { newBalance: toDamlDecimalString(newBalance) },
     token,
   );
 }
@@ -141,7 +138,7 @@ export async function createPayrollOrganization(
       employer: input.employerParty,
       operator: input.operatorParty,
       currency: input.currency ?? "CC",
-      treasuryBalance: "0.0",
+      treasuryBalance: toDamlDecimalString(0),
       payrollCooldownSeconds: 86400,
       lastPayrollRun: "",
       orgLabel: input.orgLabel,

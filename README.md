@@ -69,10 +69,13 @@ Create `.env.local`:
 
 | Variable | Purpose |
 |----------|---------|
-| `NEXT_PUBLIC_CANTON_JSON_API_URL` | Base URL of the Ledger JSON API (e.g. `http://localhost:7575`) |
-| `NEXT_PUBLIC_DAML_PACKAGE_ID` | Package id from `daml build` / `.dar` metadata |
-| `NEXT_PUBLIC_CANTON_LEDGER_ID` | Optional; defaults in `lib/canton/config.ts` if unset |
-| `NEXT_PUBLIC_CANTON_APPLICATION_ID` | Optional application id for multi-app deployments |
+| `NEXT_PUBLIC_CANTON_JSON_API_URL` | Base URL of the Ledger JSON API (e.g. `http://localhost:7575`). No `/v1` suffix. |
+| `CANTON_JSON_API_URL` | Same as above, for **server-only** env (optional; avoids exposing URL to the browser bundle if you add API routes later). |
+| `NEXT_PUBLIC_DAML_PACKAGE_ID` | **Required for real sandbox calls**: package hash from `daml build` output. Template IDs are `#packageId:Payroll:PayrollOrganization`. |
+| `NEXT_PUBLIC_CANTON_LEDGER_ID` | Optional; defaults to `sandbox` in `lib/canton/config.ts`. |
+| `NEXT_PUBLIC_CANTON_APPLICATION_ID` | Optional; defaults to `cantonpay`. Must match JWT `applicationId` your participant expects. |
+
+**Daml `Decimal` fields** (`treasuryBalance`, `salary`, etc.) are sent to the JSON API as **strings** (`lib/canton/daml-decimal.ts`).
 
 The client uses **unsigned dev-style JWTs** in code paths suitable for sandbox demos. **Production** deployments should issue **properly signed** JWTs from your IdP or participant docs; swap or extend the helpers in `json-api-client.ts` when you harden auth.
 

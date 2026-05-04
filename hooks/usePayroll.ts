@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   addEmployeeChoice,
-  cantonJsonApiConfigured,
   createPayrollOrganization,
   loadPayrollState,
   parseLastPayrollInstant,
@@ -13,6 +12,7 @@ import {
   type EmploymentContractRow,
   type PayrollOrgContract,
 } from "@/lib/canton";
+import { cantonJsonApiConfigured } from "@/lib/canton/env";
 import { useCantonAuth } from "@/contexts/canton-auth";
 
 /**

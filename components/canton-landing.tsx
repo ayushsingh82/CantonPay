@@ -8,8 +8,10 @@ import {
   allocateParty,
   partyToken,
   createContract,
+  toDamlDecimalString,
   type PayrollOrganizationPayload,
 } from "@/lib/canton";
+import { cantonJsonApiConfigured } from "@/lib/canton/env";
 import { Loader2 } from "lucide-react";
 
 export function CantonLanding() {
@@ -18,7 +20,7 @@ export function CantonLanding() {
   const [joinErr, setJoinErr] = useState<string | null>(null);
   const [demoBusy, setDemoBusy] = useState(false);
 
-  const hasApi = Boolean(process.env.NEXT_PUBLIC_CANTON_JSON_API_URL);
+  const hasApi = cantonJsonApiConfigured();
 
   const handleJoin = useCallback(() => {
     const trimmed = joinAddr.trim();
@@ -43,7 +45,7 @@ export function CantonLanding() {
           employer,
           operator,
           currency: "CC",
-          treasuryBalance: "0.0",
+          treasuryBalance: toDamlDecimalString(0),
           payrollCooldownSeconds: 86400,
           lastPayrollRun: "",
           orgLabel: "Demo Org",

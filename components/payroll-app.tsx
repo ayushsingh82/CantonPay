@@ -20,6 +20,7 @@ import { SettingsView } from "@/views/SettingsView";
 import { NotAuthorized } from "@/views/NotAuthorized";
 import { PayslipsView } from "@/views/PayslipsView";
 import { Loader2 } from "lucide-react";
+import { damlPackageConfigured } from "@/lib/canton/config";
 
 function isLikelyOrgId(id: string) {
   return id.length >= 8;
@@ -135,6 +136,20 @@ export function PayrollApp() {
       />
 
       <main className="main-content">
+        {!damlPackageConfigured() ? (
+          <div
+            className="w-full border-b border-amber-500/30 bg-amber-500/10 px-4 py-3 text-center text-[13px] text-amber-200/90"
+            role="status"
+          >
+            <strong className="text-amber-300">Daml package id not set.</strong> Add{" "}
+            <code className="rounded bg-black/30 px-1.5 py-0.5 font-mono text-xs">
+              NEXT_PUBLIC_DAML_PACKAGE_ID
+            </code>{" "}
+            to <code className="font-mono text-xs">.env.local</code> after{" "}
+            <code className="font-mono text-xs">daml build</code> — without it, template
+            IDs won’t match the sandbox JSON API.
+          </div>
+        ) : null}
         <div className="main-content-panel">
         {activeTab === "dashboard" && (
           <DashboardView
