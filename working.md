@@ -1,154 +1,47 @@
-# CantonPay Working Guide
+# Canton Payroll: How It Works
 
-This file is the practical runbook to complete CantonPay from local dev to deployed Daml contracts.
+Canton Payroll is a specialized demonstration of the Canton Network's sub-transaction privacy capabilities combined with modern React (Next.js) frontends. Below is a breakdown of the business logic, the Daml smart contracts, and how the frontend orchestrates the state.
 
-## 1) Project Goal
+## 1. The Daml Logic (`Payroll.daml`)
 
-Build and operate payroll on Canton with:
-- `PayrollOrganization` for org-level controls (treasury, cooldown, run payroll)
-- `EmploymentContract` for employee salary records
-- Next.js UI (`CantonPay`) using Canton JSON API
+The core business rules reside entirely on the Canton Network. Two primary templates control the state:
 
-No EVM/wallet flow is required.
+### `PayrollOrganization` Template
+This is the root contract of the application. It acts as the "control center" and treasury.
+- **Signatory**: The `employer` (who funds the treasury and triggers payroll).
+- **Observer**: The `operator`.
+- **State**: Holds the `treasuryBalance` (Decimal), a `payrollCooldownSeconds` lock, and `lastPayrollRun`.
+- **Choices**:
+  - `UpdateTreasuryFromEmployer`: Archives the current contract and reissues it with a new `treasuryBalance`.
+  - `AddEmployee`: A non-consuming choice that generates a secondary `EmploymentContract` linked to this overarching organization.
+  - `RunPayroll`: Acts as the trigger event that finalizes a batch disbursement.
 
----
+### `EmploymentContract` Template
+This defines individual employee salaries.
+- **Signatory**: The `employer`.
+- **Observers**: The `employee` and `operator`.
+- **Privacy Model**: Because `employee` is an observer *only* on their own specific template, they are cryptographically locked out from viewing other `EmploymentContract`s within the same `PayrollOrganization`.
+- **Choices**:
+  - `UpdateSalary`: Allows the employer to change the employee's salary.
+  - `RemoveEmployee`: Archives the contract, effectively firing the employee.
 
-## 2) Current Architecture (what exists now)
+## 2. Next.js Frontend Integration (`canton-payroll`)
 
-- Daml model: `daml/Payroll.daml`
-- Canton client/services: `lib/canton/*`
-- UI + state: `components/*`, `views/*`, `hooks/usePayroll.ts`
-- Party auth/session: `contexts/canton-auth.tsx`
-- Org route: `/org/[contractAddress]`
-- Landing route: `/`
+The frontend application uses a hybrid data model that bridges the ledger's JSON API with standard React hooks.
 
----
+### Ledger Interaction (`lib/canton/index.ts`)
+The `canton` library is a thin wrapper over the Canton JSON API (`POST /v1/create`, `POST /v1/exercise`, `POST /v1/query`).
+- **Party Tokens**: For demo purposes, parties are dynamically allocated on the fly using the `allocateParty` function, and simulated JSON Web Tokens (JWTs) or bare requests are used to authorize as those parties.
+- **Commands**: Components dispatch commands to the ledger. For instance, when an employer clicks "Add Employee", the frontend sends an HTTP request instructing the ledger to exercise the `AddEmployee` choice on the specific `PayrollOrganization` contract ID.
 
-## 3) Local Setup (end-to-end)
+### State Visibility
+Because Canton is a synchronized, distributed ledger:
+- When the React hook queries the Canton API (`POST /v1/query`), the response returns only the contracts the currently authenticated party has the rights to read.
+- This means the frontend logic does not have to filter the salaries—the Canton backend natively enforces data segregation before the JSON data even hits the browser.
 
-## A. Install prerequisites
+## 3. Workflow Cycle
 
-- Node 20+
-- Daml SDK
-- Canton sandbox / participant with JSON API access
-
-## B. Build Daml package
-
-```bash
-daml build
-```
-
-Then get package id (example):
-
-```bash
-daml damlc inspect-dar .daml/dist/*.dar
-```
-
-Copy the main package id into `.env.local`:
-
-```bash
-NEXT_PUBLIC_DAML_PACKAGE_ID=<your_package_id>
-NEXT_PUBLIC_CANTON_JSON_API_URL=http://localhost:7575
-NEXT_PUBLIC_CANTON_LEDGER_ID=sandbox
-NEXT_PUBLIC_CANTON_APPLICATION_ID=cantonpay
-```
-
-## C. Start Canton + JSON API
-
-Common local pattern:
-
-1. Start Canton participant / sandbox
-2. Start JSON API against ledger API
-
-Example JSON API command:
-
-```bash
-daml json-api \
-  --ledger-host localhost \
-  --ledger-port 12011 \
-  --http-port 7575 \
-  --allow-insecure-tokens
-```
-
-## D. Start frontend
-
-```bash
-npm install
-npm run dev
-```
-
-Open `http://localhost:3000`.
-
----
-
-## 4) How to use app locally
-
-1. Open landing page.
-2. Click dashboard or go to join section.
-3. Either:
-   - paste existing `PayrollOrganization` contract id, or
-   - spawn demo org (when JSON API is configured).
-4. Login with party hint (Employer/Employee/Operator).
-5. Use dashboard:
-   - fund treasury
-   - add/remove employees
-   - run payroll
-
----
-
-## 5) Production Deployment Plan
-
-## A. Daml / Canton
-
-1. Build release DAR.
-2. Upload DAR to target participant/domain setup.
-3. Configure participant APIs:
-   - Ledger API
-   - JSON API (HTTP endpoint)
-4. Configure auth:
-   - replace unsigned dev JWT flow with signed JWT from your IdP
-   - enforce claim mapping for `actAs` / `readAs`
-
-## B. Frontend deployment
-
-1. Build and deploy Next.js app (Vercel, Docker, VM, etc.).
-2. Set environment variables in deployment platform:
-   - `NEXT_PUBLIC_CANTON_JSON_API_URL`
-   - `NEXT_PUBLIC_DAML_PACKAGE_ID`
-   - `NEXT_PUBLIC_CANTON_LEDGER_ID`
-   - `NEXT_PUBLIC_CANTON_APPLICATION_ID`
-3. Validate app against production JSON API.
-
----
-
-## 6) Minimum checklist to call project “complete”
-
-- [ ] Daml contracts compile and DAR is versioned
-- [ ] Org creation and employee lifecycle work
-- [ ] Payroll run flow works with cooldown checks
-- [ ] Party-scoped visibility verified (employer vs employee vs operator)
-- [ ] Signed JWT auth integrated (no insecure tokens in production)
-- [ ] Error handling and empty states polished
-- [ ] Landing + dashboard copy finalized for CantonPay
-- [ ] README + this runbook updated with final deployment URLs
-
----
-
-## 7) Next enhancements (recommended)
-
-- Add `PayslipRecord` template and real payslips view
-- Add transaction stream view using JSON API streams
-- Add audit/approval templates for payroll governance
-- Add integration tests (API + UI happy path)
-- Add admin setup page for org bootstrap (instead of manual id paste)
-
----
-
-## 8) Useful references
-
-- Daml JSON API docs: https://docs.daml.com/json-api/index.html
-- Daml build docs: https://docs.daml.com/tools/assistant-build.html
-- Canton + Daml SDK tutorial: https://docs.daml.com/canton/tutorials/use_daml_sdk.html
-- Canton API configuration: https://docs.daml.com/canton/usermanual/apis.html
-- Digital Asset JSON API config guide: https://docs.digitalasset.com/operate/3.5/howtos/configure/apis/json_api.html
-- Canton Docker docs: https://docs.daml.com/canton/usermanual/docker.html
+1. **Initialization:** The employer deploys the initial `PayrollOrganization` contract with zero capital.
+2. **Setup:** The employer exercises the treasury funding choice to provide enough `CC` (Canton Coin / Splice Amulets equivalent) to cover salaries.
+3. **Drafting:** The employer adds `EmploymentContract`s. The active contract set (ACS) expands.
+4. **Execution:** The employer exercises `RunPayroll` on the `PayrollOrganization`. In a full smart-contract setup, this would trigger an atomic transaction transferring assets from the loaded treasury into the possession of the `employee` parties based on their `EmploymentContract` amounts.
