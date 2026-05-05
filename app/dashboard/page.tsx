@@ -455,6 +455,11 @@ export default function DashboardPage() {
           setTreasuryBalance(`${bal} CC`);
           setIsTreasuryRevealed(true);
         }}
+        onSetBalance={async (bal) => {
+          setTreasuryBalance(`${bal} CC`);
+          setIsTreasuryRevealed(true);
+        }}
+        currency="CC"
       />
 
       <SendTokensModal

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { WalletPanel } from '@/components/WalletPanel';
 
 interface SidebarProps {
     activeTab: string;
@@ -72,10 +73,7 @@ const PAYSLIP_NAV_ITEM = {
     ),
 };
 
-const truncateParty = (id: string) =>
-    id.length > 18 ? `${id.slice(0, 10)}…${id.slice(-6)}` : id;
-
-export function Sidebar({ activeTab, onTabChange, partyId, onLogout, isEmployer }: SidebarProps) {
+export function Sidebar({ activeTab, onTabChange, isEmployer }: SidebarProps) {
     return (
         <aside className="sidebar">
             <Link href="/" className="sidebar-logo" style={{ textDecoration: 'none', cursor: 'pointer' }}>
@@ -109,27 +107,7 @@ export function Sidebar({ activeTab, onTabChange, partyId, onLogout, isEmployer 
             </nav>
 
             <div className="sidebar-footer">
-                <div className="network-badge" style={{ marginBottom: '8px' }}>
-                    <div className="network-dot" />
-                    Canton · JSON API
-                </div>
-                {partyId ? (
-                    <button
-                        type="button"
-                        className="nav-item"
-                        onClick={onLogout}
-                        style={{ fontSize: '11px', padding: '6px 10px', width: '100%' }}
-                        title={partyId}
-                    >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '14px', height: '14px', flexShrink: 0 }}>
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                            <path d="M7 11V7a5 5 0 0 1 9.9-1" />
-                        </svg>
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{truncateParty(partyId)}</span>
-                    </button>
-                ) : (
-                    <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>No party session</span>
-                )}
+                <WalletPanel variant="sidebar" />
             </div>
         </aside>
     );

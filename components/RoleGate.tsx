@@ -1,17 +1,17 @@
 "use client";
 
-import { useCantonAuth } from "@/contexts/canton-auth";
-import { Loader2 } from "lucide-react";
 import { useState } from "react";
+import { useCantonAuth } from "@/contexts/canton-auth";
+import { NetworkSelector } from "@/components/NetworkSelector";
+import { WalletConnectModal } from "@/components/WalletConnectModal";
 
 interface RoleGateProps {
   children: React.ReactNode;
 }
 
 export function RoleGate({ children }: RoleGateProps) {
-  const { partyId, login } = useCantonAuth();
-  const [hint, setHint] = useState("Employer");
-  const [busy, setBusy] = useState(false);
+  const { partyId, networkId, network, switchNetwork } = useCantonAuth();
+  const [open, setOpen] = useState(false);
 
   if (partyId) return <>{children}</>;
 
@@ -20,57 +20,61 @@ export function RoleGate({ children }: RoleGateProps) {
       <div className="role-gate-card">
         <div className="role-gate-logo">CantonPay</div>
         <p className="role-gate-subtitle">
-          Canton Ledger · party login (JSON API)
+          Canton ledger · party login (JSON API)
         </p>
         <p className="role-gate-desc">
-          Allocate or reconnect a Daml party via the sandbox JSON API. What each
-          party sees follows signatories and observers in your Daml model.
+          Allocate or reconnect a Daml party via the {network.label} JSON API.
+          What each party sees follows signatories and observers in the Daml
+          model.
         </p>
-        <label className="form-label" style={{ marginBottom: 8, display: "block" }}>
-          Party hint
-        </label>
-        <input
-          className="input-field"
-          value={hint}
-          onChange={(e) => setHint(e.target.value)}
-          placeholder="Employer / Employee / Operator"
-        />
+
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            margin: "20px 0 16px",
+            gap: 12,
+          }}
+        >
+          <span
+            style={{
+              fontSize: 11,
+              fontFamily: "var(--font-mono)",
+              textTransform: "uppercase",
+              letterSpacing: "0.14em",
+              color: "var(--text-tertiary)",
+            }}
+          >
+            Network
+          </span>
+          <NetworkSelector active={networkId} onChange={switchNetwork} />
+        </div>
+
         <button
           type="button"
           className="btn btn-primary"
-          onClick={async () => {
-            setBusy(true);
-            try {
-              await login(hint.trim() || "Employer");
-            } finally {
-              setBusy(false);
-            }
-          }}
-          disabled={busy}
+          onClick={() => setOpen(true)}
           style={{
             width: "100%",
             justifyContent: "center",
             fontSize: "14px",
             padding: "12px 24px",
-            marginTop: 16,
+            marginTop: 8,
           }}
         >
-          {busy ? (
-            <>
-              <Loader2 className="inline h-4 w-4 animate-spin" /> Connecting…
-            </>
-          ) : (
-            "Connect party"
-          )}
+          Connect wallet
         </button>
+
         <div
           className="network-badge"
           style={{ justifyContent: "center", marginTop: "16px" }}
         >
           <div className="network-dot" />
-          Canton JSON API · Daml parties
+          {network.label} · {network.currency}
         </div>
       </div>
+      <WalletConnectModal isOpen={open} onClose={() => setOpen(false)} />
     </div>
   );
 }

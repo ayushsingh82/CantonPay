@@ -4,23 +4,24 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   addEmployeeChoice,
   createPayrollOrganization,
+  fundTreasuryChoice,
   loadPayrollState,
   parseLastPayrollInstant,
   removeEmployeeChoice,
   runPayrollChoice,
+  sumRosterSalaries,
   updateTreasuryChoice,
   type EmploymentContractRow,
   type PayrollOrgContract,
 } from "@/lib/canton";
-import { cantonJsonApiConfigured } from "@/lib/canton/env";
 import { useCantonAuth } from "@/contexts/canton-auth";
 
 /**
  * React state + actions for the payroll org identified by `orgContractId` (ledger contract id).
- * Domain logic: `lib/canton/payroll-ledger.ts`.
+ * Domain logic lives in `lib/canton/payroll-ledger.ts`.
  */
 export function usePayroll(orgContractId: string) {
-  const { token } = useCantonAuth();
+  const { token, apiUrl, networkId, network } = useCantonAuth();
 
   const [organization, setOrganization] = useState<PayrollOrgContract | null>(
     null,
@@ -35,8 +36,15 @@ export function usePayroll(orgContractId: string) {
     null,
   );
 
+  const ledgerOpts = useMemo(
+    () => ({ apiUrl, networkId }),
+    [apiUrl, networkId],
+  );
+
+  const hasLedger = useMemo(() => Boolean(apiUrl?.trim()), [apiUrl]);
+
   const refresh = useCallback(async () => {
-    if (!token || !orgContractId || !cantonJsonApiConfigured()) {
+    if (!token || !orgContractId || !hasLedger) {
       setOrganization(null);
       setEmploymentRows([]);
       setLoading(false);
@@ -48,6 +56,7 @@ export function usePayroll(orgContractId: string) {
       const { organization: org, employments } = await loadPayrollState(
         token,
         orgContractId,
+        ledgerOpts,
       );
       setEmploymentRows(employments);
       if (org) {
@@ -67,7 +76,7 @@ export function usePayroll(orgContractId: string) {
     } finally {
       setLoading(false);
     }
-  }, [token, orgContractId]);
+  }, [token, orgContractId, hasLedger, ledgerOpts]);
 
   useEffect(() => {
     void refresh();
@@ -78,17 +87,27 @@ export function usePayroll(orgContractId: string) {
     [employmentRows],
   );
 
+  const totalPayroll = useMemo(
+    () => sumRosterSalaries(employmentRows),
+    [employmentRows],
+  );
+
   const runPayroll = useCallback(async () => {
     if (!token || !organization) throw new Error("Organization not loaded");
     setPending(true);
     try {
-      const res = await runPayrollChoice(token, organization.cid);
-      setLastLedgerResponse(JSON.stringify(res).slice(0, 120));
+      const res = await runPayrollChoice(
+        token,
+        organization.cid,
+        totalPayroll,
+        ledgerOpts,
+      );
+      setLastLedgerResponse(JSON.stringify(res).slice(0, 160));
       await refresh();
     } finally {
       setPending(false);
     }
-  }, [token, organization, refresh]);
+  }, [token, organization, totalPayroll, ledgerOpts, refresh]);
 
   const addEmployee = useCallback(
     async (employeeHint: string, salaryAmount: number) => {
@@ -101,13 +120,14 @@ export function usePayroll(orgContractId: string) {
           orgContractId,
           employeeHint,
           salaryAmount,
+          ledgerOpts,
         );
         await refresh();
       } finally {
         setPending(false);
       }
     },
-    [token, organization, orgContractId, refresh],
+    [token, organization, orgContractId, ledgerOpts, refresh],
   );
 
   const removeEmployee = useCallback(
@@ -115,13 +135,13 @@ export function usePayroll(orgContractId: string) {
       if (!token) throw new Error("Not authenticated");
       setPending(true);
       try {
-        await removeEmployeeChoice(token, employmentContractId);
+        await removeEmployeeChoice(token, employmentContractId, ledgerOpts);
         await refresh();
       } finally {
         setPending(false);
       }
     },
-    [token, refresh],
+    [token, ledgerOpts, refresh],
   );
 
   const updateTreasuryBalance = useCallback(
@@ -129,13 +149,37 @@ export function usePayroll(orgContractId: string) {
       if (!token || !organization) throw new Error("Organization not loaded");
       setPending(true);
       try {
-        await updateTreasuryChoice(token, organization.cid, newBalance);
+        await updateTreasuryChoice(
+          token,
+          organization.cid,
+          newBalance,
+          ledgerOpts,
+        );
         await refresh();
       } finally {
         setPending(false);
       }
     },
-    [token, organization, refresh],
+    [token, organization, ledgerOpts, refresh],
+  );
+
+  const fundTreasury = useCallback(
+    async (addAmount: string) => {
+      if (!token || !organization) throw new Error("Organization not loaded");
+      setPending(true);
+      try {
+        await fundTreasuryChoice(
+          token,
+          organization.cid,
+          addAmount,
+          ledgerOpts,
+        );
+        await refresh();
+      } finally {
+        setPending(false);
+      }
+    },
+    [token, organization, ledgerOpts, refresh],
   );
 
   const createOrganization = useCallback(
@@ -148,12 +192,16 @@ export function usePayroll(orgContractId: string) {
       if (!token) throw new Error("Login first");
       setPending(true);
       try {
-        return await createPayrollOrganization(token, input);
+        return await createPayrollOrganization(
+          token,
+          { ...input, currency: input.currency ?? network.currency },
+          ledgerOpts,
+        );
       } finally {
         setPending(false);
       }
     },
-    [token],
+    [token, network.currency, ledgerOpts],
   );
 
   return {
@@ -176,7 +224,10 @@ export function usePayroll(orgContractId: string) {
     addEmployee,
     removeEmployee,
     updateTreasuryBalance,
+    fundTreasury,
     createOrganization,
+
+    totalPayroll,
 
     payrollCooldown: organization?.payload.payrollCooldownSeconds
       ? BigInt(organization.payload.payrollCooldownSeconds)
@@ -189,6 +240,6 @@ export function usePayroll(orgContractId: string) {
       ? `${organization.payload.treasuryBalance} ${organization.payload.currency}`
       : null,
 
-    hasLedger: cantonJsonApiConfigured(),
+    hasLedger,
   };
 }

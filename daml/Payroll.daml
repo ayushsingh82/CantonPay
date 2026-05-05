@@ -1,4 +1,17 @@
 -- | Payroll on Canton — party-based visibility (no EVM / no FHEVM).
+--
+-- Flow:
+--   1. Employer creates a `PayrollOrganization` with zero treasury.
+--   2. Employer funds treasury via `FundTreasury` (additive) or sets it via
+--      `UpdateTreasuryFromEmployer`.
+--   3. Employer adds employees via `AddEmployee`, producing `EmploymentContract`s.
+--   4. Employer triggers `RunPayroll runAt totalAmount`:
+--        - asserts cooldown elapsed (compared against `lastPayrollRun` in seconds)
+--        - asserts `treasuryBalance >= totalAmount`
+--        - decrements treasury and stamps `lastPayrollRun`.
+--   The frontend computes `totalAmount` as the sum of the visible roster's salaries
+--   and is responsible for batching per-employee transfers if the underlying asset
+--   model requires that (e.g. Splice Amulets).
 module Payroll where
 
 template PayrollOrganization
@@ -8,11 +21,18 @@ template PayrollOrganization
     currency : Text
     treasuryBalance : Decimal
     payrollCooldownSeconds : Int
+    -- ISO-8601 timestamp string, "" before any run.
     lastPayrollRun : Text
+    -- Unix-seconds version of `lastPayrollRun` so on-ledger cooldown
+    -- enforcement does not require parsing ISO text in Daml.
+    lastPayrollRunUnix : Int
     orgLabel : Text
   where
     signatory employer
     observer operator
+
+    ensure treasuryBalance >= 0.0
+        && payrollCooldownSeconds >= 0
 
     choice AddEmployee : ContractId EmploymentContract
       with
@@ -21,6 +41,7 @@ template PayrollOrganization
         payrollOrgCid : Text
       controller employer
       do
+        assertMsg "salary must be > 0" (salary > 0.0)
         create EmploymentContract with
           payrollOrgCid
           employer
@@ -34,43 +55,45 @@ template PayrollOrganization
       with newBalance : Decimal
       controller employer
       do
+        assertMsg "balance must be >= 0" (newBalance >= 0.0)
         archive self
-        create PayrollOrganization with
-          employer
-          operator
-          currency
-          treasuryBalance = newBalance
-          payrollCooldownSeconds
-          lastPayrollRun
-          orgLabel
+        create this with treasuryBalance = newBalance
+
+    choice FundTreasury : ContractId PayrollOrganization
+      with addAmount : Decimal
+      controller employer
+      do
+        assertMsg "fund amount must be > 0" (addAmount > 0.0)
+        archive self
+        create this with treasuryBalance = treasuryBalance + addAmount
 
     choice SetPayrollCooldown : ContractId PayrollOrganization
       with seconds : Int
       controller employer
       do
+        assertMsg "cooldown must be >= 0" (seconds >= 0)
         archive self
-        create PayrollOrganization with
-          employer
-          operator
-          currency
-          treasuryBalance
-          payrollCooldownSeconds = seconds
-          lastPayrollRun
-          orgLabel
+        create this with payrollCooldownSeconds = seconds
 
+    -- | Atomic payroll run. Caller computes `totalAmount` from the roster
+    -- they can see; the choice enforces cooldown + treasury sufficiency.
     choice RunPayroll : ContractId PayrollOrganization
-      with runAt : Text
+      with
+        runAt : Text
+        runAtUnix : Int
+        totalAmount : Decimal
       controller employer
       do
+        assertMsg "totalAmount must be >= 0" (totalAmount >= 0.0)
+        assertMsg "treasury insufficient for payroll"
+                  (treasuryBalance >= totalAmount)
+        assertMsg "cooldown not elapsed"
+                  (runAtUnix >= lastPayrollRunUnix + payrollCooldownSeconds)
         archive self
-        create PayrollOrganization with
-          employer
-          operator
-          currency
-          treasuryBalance
-          payrollCooldownSeconds
+        create this with
+          treasuryBalance = treasuryBalance - totalAmount
           lastPayrollRun = runAt
-          orgLabel
+          lastPayrollRunUnix = runAtUnix
 
 template EmploymentContract
   with
@@ -85,6 +108,8 @@ template EmploymentContract
     signatory employer
     observer employee, operator
 
+    ensure salary >= 0.0
+
     choice RemoveEmployee : ()
       controller employer
       do archive self
@@ -93,12 +118,6 @@ template EmploymentContract
       with newSalary : Decimal
       controller employer
       do
+        assertMsg "salary must be >= 0" (newSalary >= 0.0)
         archive self
-        create EmploymentContract with
-          payrollOrgCid
-          employer
-          operator
-          employee
-          salary = newSalary
-          currency
-          orgLabel
+        create this with salary = newSalary

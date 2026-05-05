@@ -1,12 +1,14 @@
 /**
  * Canton Ledger JSON API (create / query / exercise / fetch), JWT helpers.
  * @see https://docs.daml.com/json-api/index.html
+ *
+ * All public functions accept an optional `apiUrl` override so the wallet can
+ * route calls to the active network's JSON API base URL.
  */
 
 import { APPLICATION_ID, LEDGER_ID, templateId } from "./config";
 import { cantonJsonApiBaseUrl } from "./env";
-
-const CANTON_API = cantonJsonApiBaseUrl();
+import { getNetwork, type NetworkId } from "./networks";
 
 function base64url(str: string): string {
   if (typeof window === "undefined") {
@@ -22,14 +24,24 @@ function base64url(str: string): string {
     .replace(/=+$/, "");
 }
 
+function networkLedgerId(networkId?: NetworkId): string {
+  if (!networkId) return LEDGER_ID;
+  return getNetwork(networkId).ledgerId;
+}
+
+function networkAppId(networkId?: NetworkId): string {
+  if (!networkId) return APPLICATION_ID;
+  return getNetwork(networkId).applicationId;
+}
+
 /** Sandbox dev token — production must use signed JWT from your IdP. */
-export function adminToken(): string {
+export function adminToken(networkId?: NetworkId): string {
   const header = base64url(JSON.stringify({ alg: "HS256", typ: "JWT" }));
   const payload = base64url(
     JSON.stringify({
       "https://daml.com/ledger-api": {
-        ledgerId: LEDGER_ID,
-        applicationId: APPLICATION_ID,
+        ledgerId: networkLedgerId(networkId),
+        applicationId: networkAppId(networkId),
         admin: true,
       },
       exp: Math.floor(Date.now() / 1000) + 86400,
@@ -39,13 +51,13 @@ export function adminToken(): string {
   return `${header}.${payload}.unsigned`;
 }
 
-export function partyToken(partyId: string): string {
+export function partyToken(partyId: string, networkId?: NetworkId): string {
   const header = base64url(JSON.stringify({ alg: "HS256", typ: "JWT" }));
   const payload = base64url(
     JSON.stringify({
       "https://daml.com/ledger-api": {
-        ledgerId: LEDGER_ID,
-        applicationId: APPLICATION_ID,
+        ledgerId: networkLedgerId(networkId),
+        applicationId: networkAppId(networkId),
         actAs: [partyId],
         readAs: [partyId],
       },
@@ -58,47 +70,73 @@ export function partyToken(partyId: string): string {
 
 const partyRegistry: Record<string, string> = {};
 
-export function getCachedParty(hint: string): string | undefined {
-  return partyRegistry[hint];
+function regKey(networkId: NetworkId | undefined, hint: string): string {
+  return `${networkId ?? "default"}::${hint}`;
 }
 
-export async function allocateParty(hint: string): Promise<string> {
-  if (partyRegistry[hint]) return partyRegistry[hint];
+export function getCachedParty(
+  hint: string,
+  networkId?: NetworkId,
+): string | undefined {
+  return partyRegistry[regKey(networkId, hint)];
+}
 
-  const listRes = await fetch(`${CANTON_API}/v1/parties`, {
+function resolveApiUrl(apiUrl?: string): string {
+  return (apiUrl ?? cantonJsonApiBaseUrl()).replace(/\/+$/, "");
+}
+
+export async function allocateParty(
+  hint: string,
+  opts: { apiUrl?: string; networkId?: NetworkId } = {},
+): Promise<string> {
+  const key = regKey(opts.networkId, hint);
+  if (partyRegistry[key]) return partyRegistry[key];
+  const api = resolveApiUrl(opts.apiUrl);
+  if (!api) throw new Error("Canton JSON API URL not configured");
+
+  const listRes = await fetch(`${api}/v1/parties`, {
     method: "GET",
-    headers: { Authorization: `Bearer ${adminToken()}` },
+    headers: { Authorization: `Bearer ${adminToken(opts.networkId)}` },
   });
-  const listData = await listRes.json();
-  const found = listData.result?.find(
-    (p: { displayName?: string; identifier: string }) =>
-      p.displayName === hint || p.identifier.startsWith(`${hint}::`),
-  );
-  if (found) {
-    partyRegistry[hint] = found.identifier;
-    return found.identifier;
+  if (listRes.ok) {
+    const listData = await listRes.json();
+    const found = listData.result?.find(
+      (p: { displayName?: string; identifier: string }) =>
+        p.displayName === hint || p.identifier.startsWith(`${hint}::`),
+    );
+    if (found) {
+      partyRegistry[key] = found.identifier;
+      return found.identifier;
+    }
   }
 
-  const res = await fetch(`${CANTON_API}/v1/parties/allocate`, {
+  const res = await fetch(`${api}/v1/parties/allocate`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${adminToken()}`,
+      Authorization: `Bearer ${adminToken(opts.networkId)}`,
     },
     body: JSON.stringify({ identifierHint: hint, displayName: hint }),
   });
 
   const data = await res.json();
   if (data.status === 200 && data.result?.identifier) {
-    partyRegistry[hint] = data.result.identifier;
+    partyRegistry[key] = data.result.identifier;
     return data.result.identifier;
   }
 
   throw new Error(`Failed to allocate party ${hint}: ${JSON.stringify(data)}`);
 }
 
-async function apiCall(endpoint: string, body: unknown, token: string) {
-  const res = await fetch(`${CANTON_API}${endpoint}`, {
+async function apiCall(
+  endpoint: string,
+  body: unknown,
+  token: string,
+  apiUrl?: string,
+) {
+  const api = resolveApiUrl(apiUrl);
+  if (!api) throw new Error("Canton JSON API URL not configured");
+  const res = await fetch(`${api}${endpoint}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -125,6 +163,7 @@ export async function createContract<T>(
   name: string,
   payload: T,
   token: string,
+  apiUrl?: string,
 ): Promise<ContractResult<T>> {
   const result = await apiCall(
     "/v1/create",
@@ -133,6 +172,7 @@ export async function createContract<T>(
       payload,
     },
     token,
+    apiUrl,
   );
   return result.result;
 }
@@ -140,6 +180,7 @@ export async function createContract<T>(
 export async function queryContracts<T>(
   name: string,
   token: string,
+  apiUrl?: string,
 ): Promise<ContractResult<T>[]> {
   const result = await apiCall(
     "/v1/query",
@@ -147,6 +188,7 @@ export async function queryContracts<T>(
       templateIds: [templateId(name)],
     },
     token,
+    apiUrl,
   );
   return result.result ?? [];
 }
@@ -157,6 +199,7 @@ export async function exerciseChoice(
   choice: string,
   argument: Record<string, unknown>,
   token: string,
+  apiUrl?: string,
 ): Promise<{ result?: unknown }> {
   return apiCall(
     "/v1/exercise",
@@ -167,6 +210,7 @@ export async function exerciseChoice(
       argument,
     },
     token,
+    apiUrl,
   );
 }
 
@@ -174,6 +218,7 @@ export async function fetchContract<T>(
   name: string,
   contractId: string,
   token: string,
+  apiUrl?: string,
 ): Promise<ContractResult<T> | null> {
   try {
     const result = await apiCall(
@@ -183,6 +228,7 @@ export async function fetchContract<T>(
         contractId,
       },
       token,
+      apiUrl,
     );
     return result.result ?? null;
   } catch {

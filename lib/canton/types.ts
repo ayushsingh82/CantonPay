@@ -6,6 +6,7 @@ export type PayrollOrganizationPayload = {
   treasuryBalance: string;
   payrollCooldownSeconds: number;
   lastPayrollRun: string;
+  lastPayrollRunUnix: number;
   orgLabel: string;
 };
 
