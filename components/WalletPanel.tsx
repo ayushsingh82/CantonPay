@@ -12,7 +12,7 @@ interface WalletPanelProps {
 }
 
 export function WalletPanel({ variant = "sidebar" }: WalletPanelProps) {
-  const { partyId, network, networkId, logout } = useCantonAuth();
+  const { partyId, network, networkId, logout, isDemo } = useCantonAuth();
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -65,24 +65,46 @@ export function WalletPanel({ variant = "sidebar" }: WalletPanelProps) {
             <Wallet size={12} />
             Wallet
           </span>
-          <span
-            style={{
-              fontSize: 9,
-              fontFamily: "var(--font-mono)",
-              textTransform: "uppercase",
-              letterSpacing: "0.14em",
-              padding: "2px 8px",
-              borderRadius: 999,
-              border: "1px solid var(--border-hairline)",
-              color: network.testnet ? "#fbbf24" : "var(--text-tertiary)",
-              background: network.testnet
-                ? "rgba(251, 191, 36, 0.08)"
-                : "transparent",
-            }}
-            title={`${networkId} · ${network.jsonApiUrl}`}
+          <div
+            style={{ display: "inline-flex", gap: 6, alignItems: "center" }}
           >
-            {network.shortLabel}
-          </span>
+            {isDemo && (
+              <span
+                style={{
+                  fontSize: 9,
+                  fontFamily: "var(--font-mono)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.14em",
+                  padding: "2px 8px",
+                  borderRadius: 999,
+                  border: "1px solid #f87171",
+                  background: "rgba(248,113,113,0.08)",
+                  color: "#f87171",
+                }}
+                title="Demo party — JSON API was unreachable; real ledger calls will fail."
+              >
+                Demo
+              </span>
+            )}
+            <span
+              style={{
+                fontSize: 9,
+                fontFamily: "var(--font-mono)",
+                textTransform: "uppercase",
+                letterSpacing: "0.14em",
+                padding: "2px 8px",
+                borderRadius: 999,
+                border: "1px solid var(--border-hairline)",
+                color: network.testnet ? "#fbbf24" : "var(--text-tertiary)",
+                background: network.testnet
+                  ? "rgba(251, 191, 36, 0.08)"
+                  : "transparent",
+              }}
+              title={`${networkId} · ${network.jsonApiUrl}`}
+            >
+              {network.shortLabel}
+            </span>
+          </div>
         </div>
 
         {partyId ? (

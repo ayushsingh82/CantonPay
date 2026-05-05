@@ -126,6 +126,14 @@ export function PayrollApp() {
     );
   }
 
+  if (payroll.isDemo) {
+    return (
+      <NotAuthorized
+        message={`Active wallet is a demo party. The Canton JSON API at ${network.jsonApiUrl} wasn't reachable when you connected, so no real org can be loaded. Start a sandbox there, then disconnect and reconnect the wallet from the landing page.`}
+      />
+    );
+  }
+
   if (!isEmployer && !isEmployee) {
     return (
       <NotAuthorized message="Your party is not part of this payroll organization" />

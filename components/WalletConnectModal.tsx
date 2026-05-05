@@ -31,6 +31,9 @@ export function WalletConnectModal({
 
   if (!isOpen) return null;
 
+  // login() auto-falls back to a deterministic demo party when the JSON
+  // API is unreachable, so this call rarely throws — only on real
+  // protocol-level errors (auth, malformed response, etc.).
   const onConnect = async () => {
     setBusy(true);
     setErr(null);
@@ -239,6 +242,7 @@ export function WalletConnectModal({
                   color: "#f87171",
                   fontSize: 12,
                   margin: 0,
+                  lineHeight: 1.5,
                   fontFamily: "var(--font-mono)",
                 }}
               >
@@ -254,12 +258,25 @@ export function WalletConnectModal({
             >
               {busy ? (
                 <>
-                  <Loader2 className="animate-spin" size={14} /> Allocating party…
+                  <Loader2 className="animate-spin" size={14} /> Connecting…
                 </>
               ) : (
                 "Connect party"
               )}
             </button>
+            <p
+              style={{
+                fontSize: 11,
+                color: "var(--text-tertiary)",
+                margin: 0,
+                lineHeight: 1.55,
+              }}
+            >
+              If the JSON API at <code className="mono">{network.jsonApiUrl}</code>{" "}
+              is reachable, the party is allocated on-ledger. Otherwise the
+              wallet falls back to a deterministic <strong>demo party</strong>{" "}
+              so you can tour the UI offline.
+            </p>
           </div>
 
           {network.faucet?.url && (

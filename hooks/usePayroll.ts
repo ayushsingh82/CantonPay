@@ -21,7 +21,7 @@ import { useCantonAuth } from "@/contexts/canton-auth";
  * Domain logic lives in `lib/canton/payroll-ledger.ts`.
  */
 export function usePayroll(orgContractId: string) {
-  const { token, apiUrl, networkId, network } = useCantonAuth();
+  const { token, apiUrl, networkId, network, isDemo } = useCantonAuth();
 
   const [organization, setOrganization] = useState<PayrollOrgContract | null>(
     null,
@@ -42,6 +42,14 @@ export function usePayroll(orgContractId: string) {
   );
 
   const hasLedger = useMemo(() => Boolean(apiUrl?.trim()), [apiUrl]);
+
+  const requireRealLedger = useCallback(() => {
+    if (isDemo) {
+      throw new Error(
+        "Active wallet is a demo party — start a Canton JSON API and reconnect to make ledger calls.",
+      );
+    }
+  }, [isDemo]);
 
   const refresh = useCallback(async () => {
     if (!token || !orgContractId || !hasLedger) {
@@ -93,6 +101,7 @@ export function usePayroll(orgContractId: string) {
   );
 
   const runPayroll = useCallback(async () => {
+    requireRealLedger();
     if (!token || !organization) throw new Error("Organization not loaded");
     setPending(true);
     try {
@@ -107,10 +116,11 @@ export function usePayroll(orgContractId: string) {
     } finally {
       setPending(false);
     }
-  }, [token, organization, totalPayroll, ledgerOpts, refresh]);
+  }, [token, organization, totalPayroll, ledgerOpts, refresh, requireRealLedger]);
 
   const addEmployee = useCallback(
     async (employeeHint: string, salaryAmount: number) => {
+      requireRealLedger();
       if (!token || !organization) throw new Error("Organization not loaded");
       setPending(true);
       try {
@@ -127,11 +137,12 @@ export function usePayroll(orgContractId: string) {
         setPending(false);
       }
     },
-    [token, organization, orgContractId, ledgerOpts, refresh],
+    [token, organization, orgContractId, ledgerOpts, refresh, requireRealLedger],
   );
 
   const removeEmployee = useCallback(
     async (employmentContractId: string) => {
+      requireRealLedger();
       if (!token) throw new Error("Not authenticated");
       setPending(true);
       try {
@@ -141,11 +152,12 @@ export function usePayroll(orgContractId: string) {
         setPending(false);
       }
     },
-    [token, ledgerOpts, refresh],
+    [token, ledgerOpts, refresh, requireRealLedger],
   );
 
   const updateTreasuryBalance = useCallback(
     async (newBalance: string) => {
+      requireRealLedger();
       if (!token || !organization) throw new Error("Organization not loaded");
       setPending(true);
       try {
@@ -160,11 +172,12 @@ export function usePayroll(orgContractId: string) {
         setPending(false);
       }
     },
-    [token, organization, ledgerOpts, refresh],
+    [token, organization, ledgerOpts, refresh, requireRealLedger],
   );
 
   const fundTreasury = useCallback(
     async (addAmount: string) => {
+      requireRealLedger();
       if (!token || !organization) throw new Error("Organization not loaded");
       setPending(true);
       try {
@@ -179,7 +192,7 @@ export function usePayroll(orgContractId: string) {
         setPending(false);
       }
     },
-    [token, organization, ledgerOpts, refresh],
+    [token, organization, ledgerOpts, refresh, requireRealLedger],
   );
 
   const createOrganization = useCallback(
@@ -219,6 +232,7 @@ export function usePayroll(orgContractId: string) {
     error,
     isPending: pending,
     lastLedgerResponse,
+    isDemo,
 
     runPayroll,
     addEmployee,

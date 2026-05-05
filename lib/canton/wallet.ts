@@ -17,6 +17,9 @@ export type WalletAccount = {
   hint: string;
   networkId: NetworkId;
   label?: string;
+  /** True if this account was minted client-side because the JSON API was
+   * unreachable. Real-ledger operations will fail under a demo party. */
+  demo?: boolean;
   createdAt: number;
 };
 

@@ -620,8 +620,12 @@ body {
   background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(4px);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  /* Reserve room below the 80px navbar plus breathing space; tall modals
+     scroll inside the overlay instead of getting clipped or jammed. */
+  padding: clamp(96px, 12vh, 160px) 16px 48px;
+  overflow-y: auto;
   z-index: 1000;
   animation: fadeIn 0.15s ease;
 }
@@ -642,6 +646,7 @@ body {
   border-radius: var(--radius);
   width: 420px;
   max-width: 90vw;
+  margin-block: auto;
   animation: slideUp 0.2s ease;
 }
 
@@ -1252,4 +1257,39 @@ body {
   padding: 12px 24px;
   font-weight: 600;
   cursor: pointer;
+}
+/* ── Landing-page grids ─────────────────────────────────────────────── */
+.landing-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 340px);
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 880px) {
+  .landing-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  align-items: center;
+}
+
+@media (max-width: 720px) {
+  .footer-grid {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+  .footer-links {
+    justify-content: center !important;
+  }
+  .footer-baseline {
+    justify-content: center !important;
+    text-align: center;
+  }
 }

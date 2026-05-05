@@ -25,6 +25,13 @@ import {
   type WalletAccount,
 } from "@/lib/canton";
 
+export type LoginResult = {
+  partyId: string;
+  /** True when the party id is a local mock because the JSON API was
+   * unreachable. Real ledger calls will fail under a demo party. */
+  demo: boolean;
+};
+
 type CantonAuthState = {
   partyId: string | null;
   hint: string | null;
@@ -34,7 +41,12 @@ type CantonAuthState = {
   apiUrl: string;
   accounts: WalletAccount[];
   isHydrated: boolean;
-  login: (hint: string, label?: string) => Promise<void>;
+  /** True if the active account was minted in demo (offline) mode. */
+  isDemo: boolean;
+  /** Resolves to a LoginResult so the caller knows whether real or demo
+   * mode took effect. Network-unreachable errors auto-fall-back to demo. */
+  login: (hint: string, label?: string) => Promise<LoginResult>;
+  loginDemo: (hint: string, label?: string) => void;
   switchAccount: (partyId: string, networkId: NetworkId) => void;
   switchNetwork: (networkId: NetworkId) => void;
   removeAccount: (partyId: string, networkId: NetworkId) => void;
@@ -63,26 +75,87 @@ export function CantonAuthProvider({ children }: { children: ReactNode }) {
 
   const network = useMemo(() => getNetwork(networkId), [networkId]);
 
-  const login = useCallback(
-    async (rawHint: string, label?: string) => {
+  const isDemo = useMemo(() => {
+    if (!partyId) return false;
+    return (
+      accounts.find(
+        (a) => a.partyId === partyId && a.networkId === networkId,
+      )?.demo === true
+    );
+  }, [accounts, partyId, networkId]);
+
+  const isUnreachable = (e: unknown) => {
+    if (e instanceof TypeError) return true;
+    const msg = e instanceof Error ? e.message : String(e);
+    return /Failed to fetch|NetworkError|ECONNREFUSED|ENOTFOUND|fetch failed/i.test(
+      msg,
+    );
+  };
+
+  const mintDemoPartyId = (cleaned: string, nid: NetworkId) => {
+    // Deterministic-ish per (network, hint) so reloads keep the same id.
+    const seed = `${nid}::${cleaned}`;
+    let h = 5381;
+    for (let i = 0; i < seed.length; i++) {
+      h = ((h << 5) + h + seed.charCodeAt(i)) >>> 0;
+    }
+    return `${cleaned}::cantonpay-demo-${h.toString(16)}`;
+  };
+
+  const persistAccount = (account: WalletAccount) => {
+    const next = saveActiveAccount(account);
+    setAccounts(next.accounts);
+    setPartyId(account.partyId);
+    setHint(account.hint);
+  };
+
+  const login = useCallback<CantonAuthState["login"]>(
+    async (rawHint, label) => {
       const cleaned = rawHint.trim() || "Employer";
-      const pid = await allocateParty(cleaned, {
-        apiUrl: network.jsonApiUrl,
-        networkId,
-      });
+      let pid: string;
+      let demo = false;
+      try {
+        pid = await allocateParty(cleaned, {
+          apiUrl: network.jsonApiUrl,
+          networkId,
+        });
+      } catch (e) {
+        if (!isUnreachable(e)) throw e;
+        // JSON API not reachable — fall back to a deterministic demo party
+        // so the user can still tour the UI. Real ledger calls will fail
+        // under this party; the wallet flags `demo: true` so the rest of
+        // the app can disable / warn appropriately.
+        pid = mintDemoPartyId(cleaned, networkId);
+        demo = true;
+      }
       const account: WalletAccount = {
         partyId: pid,
         hint: cleaned,
         networkId,
-        label: label?.trim() || cleaned,
+        label: label?.trim() || (demo ? `${cleaned} (demo)` : cleaned),
+        demo,
         createdAt: Date.now(),
       };
-      const next = saveActiveAccount(account);
-      setAccounts(next.accounts);
-      setPartyId(pid);
-      setHint(cleaned);
+      persistAccount(account);
+      return { partyId: pid, demo };
     },
     [network.jsonApiUrl, networkId],
+  );
+
+  const loginDemo = useCallback(
+    (rawHint: string, label?: string) => {
+      const cleaned = rawHint.trim() || "Employer";
+      const account: WalletAccount = {
+        partyId: mintDemoPartyId(cleaned, networkId),
+        hint: cleaned,
+        networkId,
+        label: label?.trim() || `${cleaned} (demo)`,
+        demo: true,
+        createdAt: Date.now(),
+      };
+      persistAccount(account);
+    },
+    [networkId],
   );
 
   const switchAccount = useCallback(
@@ -158,7 +231,9 @@ export function CantonAuthProvider({ children }: { children: ReactNode }) {
       apiUrl: network.jsonApiUrl,
       accounts,
       isHydrated,
+      isDemo,
       login,
+      loginDemo,
       switchAccount,
       switchNetwork,
       removeAccount,
@@ -172,7 +247,9 @@ export function CantonAuthProvider({ children }: { children: ReactNode }) {
       networkId,
       accounts,
       isHydrated,
+      isDemo,
       login,
+      loginDemo,
       switchAccount,
       switchNetwork,
       removeAccount,

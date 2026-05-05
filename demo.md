@@ -1,19 +1,19 @@
 # CantonPay Demo Walkthrough
 
-End-to-end demo of CantonPay running against a Canton Daml ledger via the JSON
-API. The wallet, the network selector, and the payroll dashboard all share a
+End-to-end demo of CantonPay running against a Canton Daml ledger via the
+JSON API. The wallet, network selector, and payroll dashboard all share a
 single source of truth: the `PayrollOrganization` and `EmploymentContract`
 templates in `daml/Payroll.daml`.
 
-This walkthrough covers two networks:
+The walkthrough covers two networks:
 
 | Preset | When to use | Currency |
 |---|---|---|
 | **Local sandbox** | Daml SDK sandbox JSON API on `localhost:7575` | `DEV` |
 | **Canton Coin · DevNet** | Your participant connected to the Splice Global Synchronizer DevNet | `CC` |
 
-You can switch between them at any time from the network selector in the navbar
-or from the wallet modal — the wallet remembers parties per-network.
+Switch between them at any time from the network selector in the navbar or
+from the wallet modal — the wallet remembers parties per-network.
 
 ---
 
@@ -28,12 +28,12 @@ npm install
 Edit `.env.local`:
 
 ```
-# Local sandbox (used by the "Local sandbox" network preset)
+# Sandbox JSON API (used by the "Local sandbox" network preset)
 NEXT_PUBLIC_CANTON_JSON_API_URL=http://localhost:7575
 
 # Canton Coin DevNet (used by the "Canton Coin · DevNet" preset).
-# Point this at YOUR participant's JSON API; the global synchronizer does not
-# expose a single shared JSON API.
+# Point this at YOUR participant's JSON API; the global synchronizer does
+# not expose a single shared JSON API.
 NEXT_PUBLIC_CANTON_TESTNET_JSON_API_URL=http://localhost:7585
 NEXT_PUBLIC_CANTON_TESTNET_LEDGER_ID=participant1
 
@@ -41,8 +41,8 @@ NEXT_PUBLIC_CANTON_TESTNET_LEDGER_ID=participant1
 NEXT_PUBLIC_CANTON_NETWORK=sandbox
 ```
 
-Build the Daml package once and copy the package id into `.env.local` so the
-JSON API can resolve template ids:
+Build the Daml package once and copy the package id into `.env.local` so
+the JSON API can resolve template ids:
 
 ```bash
 daml build
@@ -59,151 +59,195 @@ npm run dev
 
 ---
 
-## 1. Connect the employer wallet
+## 1. Tour of the landing page
 
-1. Open `http://localhost:3000`.
-2. In the top-right navbar, confirm the **network selector** says **Sandbox**
-   (or switch to **CC DevNet** if you want to demo on testnet).
-3. In the wallet panel on the right, click **Connect wallet**.
-4. Type the hint `Employer` and click **Connect party**.
-   The browser calls `POST /v1/parties/allocate` (or finds an existing party
-   that matches the hint) on the active network's JSON API. The resulting
-   party id, network, and hint are persisted to `localStorage` so refreshes
-   don't lose the session.
+When you load `/`, you'll see two stacked sections:
+
+**Hero** — title `CantonPay · payroll control center · for employers and
+employees.`, with the active network badge above it
+(`employer payroll on canton · Sandbox` or `· CC DevNet`).
+
+**Step 01 · Connect & open** (the "Open a payroll org" panel). Two
+columns:
+
+```
+┌───────────────────────────────────────┐  ┌────────────────────────┐
+│ Open a payroll org                     │  │  Wallet · Sandbox       │
+│                                        │  │                          │
+│ Existing PayrollOrganization id        │  │  [ Connect wallet ]      │
+│ ┌──────────────────────┐  ┌─────┐      │  └────────────────────────┘
+│ │ 00abc…:Payroll:…     │  │Open │      │
+│ └──────────────────────┘  └─────┘      │  ┌────────────────────────┐
+│                                        │  │  Sandbox · DEV          │
+│ ────────── or ──────────               │  │  Daml sandbox JSON API  │
+│                                        │  │  for local development. │
+│ Spawn a demo org · employer = wallet   │  │  Parties allocated on   │
+│ ┌──────────────────────────────────┐   │  │  demand; treasury is an │
+│ │ Acme Demo Co.                     │   │  │  off-asset Decimal on   │
+│ └──────────────────────────────────┘   │  │  PayrollOrganization.   │
+│ [ ✦ Spawn demo org on Sandbox ]        │  └────────────────────────┘
+│                                        │
+│ Connect a wallet on the right to       │
+│ designate the employer party.          │
+└───────────────────────────────────────┘
+```
+
+What each piece does:
+
+- **Network selector (top-right of navbar).** Switches between Sandbox and
+  CC DevNet. The wallet remembers per-network parties; switching surfaces
+  any saved account on the new network.
+- **Wallet card (right column).** `Connect wallet` opens the wallet modal
+  which calls `POST /v1/parties/allocate` against the active network's
+  JSON API (or finds an existing party matching the hint). The result is
+  saved to `localStorage` under `cantonpay:wallet`. The minted JWT carries
+  `actAs/readAs: [partyId]` for the active network's `ledgerId`.
+- **Network description card (right column, below wallet).**
+  Human-readable summary of the active preset (`Sandbox · DEV` or
+  `CC DevNet · CC`) with a faucet/docs link on testnet.
+- **"Existing PayrollOrganization contract id" field.** Paste a contract
+  id from a previous `POST /v1/create` (yours or shared by the employer).
+  Hitting **Open** routes to `/org/<contractId>`. The dashboard then
+  queries that contract under the wallet's party JWT — if the party has
+  no visibility (not the employer/operator/employee), the dashboard shows
+  "No visibility to this org contract".
+- **"Spawn a demo org" form.** Sets the `orgLabel` (default
+  `Acme Demo Co.`). Clicking the button:
+  1. Allocates an `Operator` party on the active network.
+  2. Creates a `PayrollOrganization` via `POST /v1/create` with
+     `employer = <connected wallet party>`, `operator = <Operator>`,
+     `treasuryBalance = 0.00`, `payrollCooldownSeconds = 86 400`,
+     `currency = DEV` (sandbox) or `CC` (testnet).
+  3. Redirects to `/org/<contractId>`.
+
+  The button is disabled until a wallet party is connected and the JSON
+  API URL for the active network is set; you'll see a yellow inline
+  warning explaining what's missing.
+
+- **Footer.** Brand block on the left, navigation links + external docs
+  on the right; below them, a copyright row plus the active network's
+  JSON API origin so you can sanity-check at a glance which participant
+  you're hitting.
+
+---
+
+## 2. Connect the employer wallet
+
+1. Confirm the navbar network selector says **Sandbox**.
+2. In the wallet card, click **Connect wallet**.
+3. Type the hint `Employer` and click **Connect party**.
 
 The wallet panel now shows the truncated party id (`Employer::…`) with the
-network badge next to it (`Sandbox` in grey, `CC DevNet` in amber when you're
-on testnet).
+network badge next to it (grey **Sandbox** or amber **CC DevNet**).
 
-> **Switching networks:** open the wallet modal → pick the other network. If
-> you've connected a party there before, the wallet auto-switches to it;
-> otherwise you'll see "No accounts on this network yet" and can connect a
-> fresh one.
+> **Switching networks:** open the wallet modal → pick the other network.
+> If you've connected a party there before, the wallet auto-switches to
+> it. Otherwise you'll see "No accounts on this network yet" and can
+> connect a fresh one.
 
 ---
 
-## 2. Spawn a demo PayrollOrganization
+## 3. Spawn a demo PayrollOrganization
 
-In the **Open a payroll org** card on the landing page:
+In the **Open a payroll org** card:
 
-1. Optionally edit the **Org label** (default: `Acme Demo Co.`).
+1. Optionally edit the **Org label** (default `Acme Demo Co.`).
 2. Click **Spawn demo org on Sandbox** (or **on CC DevNet**).
 
-What happens behind the scenes:
-
-- The frontend allocates an `Operator` party on the active network.
-- It creates a `PayrollOrganization` Daml contract via `POST /v1/create`,
-  with the connected wallet's party as `employer`, the operator as
-  `observer`, treasury balance `0.00`, cooldown `86 400 s`, and the
-  network's currency code (`DEV` or `CC`).
-- It redirects to `/org/<contract-id>`, the dashboard for that org.
-
-If the **Daml package id not set** banner appears, finish step 0 — the JSON
-API needs the package hash to match the template id.
+Behind the scenes, the frontend allocates an `Operator` party, creates a
+`PayrollOrganization` Daml contract, and redirects to `/org/<contract-id>`,
+the dashboard for that org. If the **Daml package id not set** banner
+appears, finish step 0 — the JSON API needs the package hash to match the
+template id.
 
 ---
 
-## 3. Fund the treasury
+## 4. Fund the treasury
 
-The first thing the dashboard shows is the empty treasury card.
+The dashboard's first card is the empty treasury.
 
 1. Click **Need tokens? → Fund treasury** (or the Fund button in the top
    stats bar).
 2. The fund modal has two modes:
-   - **Top up (FundTreasury)** — additive. Calls the `FundTreasury` choice on
-     the org contract: archives + recreates the org with
-     `treasuryBalance + addAmount`.
-   - **Set absolute** — replaces the balance. Calls the
-     `UpdateTreasuryFromEmployer` choice.
+   - **Top up (FundTreasury)** — additive. Calls the `FundTreasury`
+     choice: archives + recreates with `treasuryBalance + addAmount`.
+   - **Set absolute** — replaces the balance via
+     `UpdateTreasuryFromEmployer`.
 3. Pick **Top up**, enter `100000`, click **Fund treasury**.
 
-The treasury card refreshes and shows `100000.00 DEV` (or `…CC` on testnet).
+The treasury card refreshes and shows `100000.00 DEV` (or `…CC` on
+testnet).
 
-> **Why two modes?** During real ops you usually *fund* — adding what came in
-> from invoicing/funding sources. The "set absolute" mode is for demo cleanup
-> and reconciling. Both choices are gated by the `employer` controller.
-
-> **CC DevNet note:** the treasury balance is a Daml `Decimal` on the
-> PayrollOrganization template, not a real Canton Coin holding. To do a real
-> CC payout you'd wire a Splice Amulets transfer in the operator backend, and
-> mirror the spent amount via `FundTreasury`/`RunPayroll`. The faucet link in
-> the wallet modal points at the Splice DevNet docs.
+> **CC DevNet note.** The treasury is a Daml `Decimal`, not a real Canton
+> Coin holding. To do a real CC payout you'd wire a Splice Amulets
+> transfer in the operator backend and mirror the spent amount via
+> `FundTreasury`/`RunPayroll`. The faucet link in the wallet modal points
+> at the Splice DevNet docs.
 
 ---
 
-## 4. Add employees
+## 5. Add employees
 
 1. Switch to the **Employees** tab in the sidebar.
-2. Click **Add employee**.
-3. In the modal, type a hint (e.g. `Bob`) and a salary (e.g. `5000`).
-4. Click **Add employee**.
+2. Click **Add employee**, type a hint (`Bob`), salary `5000`, confirm.
 
-The frontend:
-
-- Allocates a Daml party for `Bob` on the active network (or reuses one that
-  already matches that hint).
-- Calls the non-consuming `AddEmployee` choice on `PayrollOrganization`,
-  producing a fresh `EmploymentContract` with signatory `employer` and
-  observers `employee, operator`.
-- Refreshes the roster.
-
-Repeat for `Alice` and `Charlie`. The roster table shows party, salary,
-currency, status, and a Remove action.
+The frontend allocates a party for `Bob` on the active network (or reuses
+one matching that hint), then exercises the non-consuming `AddEmployee`
+choice on `PayrollOrganization`, producing an `EmploymentContract` with
+signatory `employer` and observers `employee, operator`. Repeat for
+`Alice` and `Charlie`.
 
 ---
 
-## 5. Run payroll
+## 6. Run payroll
 
-1. Still on the Employees tab (or the Dashboard's Action zone), click
-   **Run payroll**.
+1. Click **Run payroll** (Dashboard's Action zone or Employees tab).
 2. The confirmation modal shows the visible roster count and the total
-   payout (sum of all `salary` fields across the rows your party can see).
+   payout (sum of `salary` across visible rows).
 3. Click **Confirm**.
 
 `runPayroll` exercises the on-ledger `RunPayroll` choice with three args
-(`runAt` ISO, `runAtUnix`, `totalAmount`). The Daml choice asserts:
+(`runAt` ISO, `runAtUnix`, `totalAmount`):
 
 ```daml
 assertMsg "treasury insufficient for payroll" (treasuryBalance >= totalAmount)
 assertMsg "cooldown not elapsed" (runAtUnix >= lastPayrollRunUnix + payrollCooldownSeconds)
 ```
 
-then archives the org contract and recreates it with the treasury
-**decremented** by `totalAmount` and `lastPayrollRun*` stamped to now. Try it
-again immediately — the choice will fail with `cooldown not elapsed`. Open
-the `Settings` tab (`Payroll Cooldown`) to see the current window (default
-24 h).
+then archives the org and recreates it with the treasury **decremented**
+by `totalAmount` and `lastPayrollRun*` stamped to now. Try it again
+immediately — the choice fails with `cooldown not elapsed`.
 
 ---
 
-## 6. Verify employee privacy (the Canton angle)
+## 7. Verify employee privacy
 
-1. In the wallet panel, click **Manage** → switch to the **same network**
-   the org lives on, then click **Connect new party** with the hint `Bob`.
-2. The wallet activates Bob's party. The dashboard reloads.
-3. The roster now contains *only* Bob's row. The treasury card shows
-   `No visibility to this org contract` because Bob is an observer on his
-   `EmploymentContract` but **not** on the `PayrollOrganization`.
-4. Open the network browser DevTools → Network tab → filter for `/v1/query`.
-   Notice the JSON response only includes Bob's `EmploymentContract` payload.
-   Alice's and Charlie's salaries are never transmitted to Bob's participant.
+1. In the wallet panel, click **Manage** → **Connect new party** with the
+   hint `Bob`.
+2. The dashboard reloads under Bob's party.
+3. The roster now shows *only* Bob's row; the treasury card says
+   "No visibility to this org contract" (Bob isn't on the org's observer
+   list).
+4. Open DevTools → Network → filter for `/v1/query`. The JSON response
+   contains only Bob's `EmploymentContract`. Alice's and Charlie's
+   payloads are never transmitted to Bob's participant.
 
-This is the cryptographic privacy guarantee of Canton: visibility is enforced
-on the participant by signatory/observer rules in Daml, *before* JSON ever
-reaches the browser.
+This is the cryptographic privacy guarantee of Canton: visibility is
+enforced on the participant by signatory/observer rules in Daml, *before*
+JSON ever reaches the browser.
 
 ---
 
-## 7. (Optional) Try the same flow on CC DevNet
+## 8. (Optional) Try the same flow on CC DevNet
 
 1. From the wallet modal, switch the network to **Canton Coin · DevNet**.
-2. Connect a party there (`Employer-cc`) — make sure your participant's JSON
-   API URL is set in `NEXT_PUBLIC_CANTON_TESTNET_JSON_API_URL`.
-3. Run steps 2–6 again. Treasury balances now display in `CC` and reference
-   your DevNet participant.
-4. To fund the treasury with *actual* Canton Coin Amulets, follow the Splice
-   DevNet validator faucet guide linked in the wallet modal. Then mirror the
-   amount into the org's treasury via **Top up (FundTreasury)**.
+2. Connect a party there (`Employer-cc`) — make sure
+   `NEXT_PUBLIC_CANTON_TESTNET_JSON_API_URL` points at your participant.
+3. Run steps 3–7 again. Treasury balances now display in `CC` and
+   reference your DevNet participant.
+4. To fund the treasury with actual Canton Coin Amulets, follow the
+   Splice DevNet validator faucet guide linked in the wallet modal. Then
+   mirror the amount into the org via **Top up (FundTreasury)**.
 
 ---
 
@@ -212,7 +256,8 @@ reaches the browser.
 | Symptom | First thing to check |
 |---|---|
 | `Daml package id not set` banner | `daml build`, paste the hash into `NEXT_PUBLIC_DAML_PACKAGE_ID`, restart `npm run dev`. |
-| Treasury choice returns `treasury insufficient for payroll` | Top up the treasury until `treasuryBalance >= totalPayroll`. |
-| Run payroll fails with `cooldown not elapsed` | Wait, or use Daml console to lower `payrollCooldownSeconds` for the demo. |
-| Spawn fails with `failed to allocate party` | The JSON API URL for the active network is wrong / your participant isn't running. |
-| Employee logs in but sees nothing | Their party id was allocated against a different network. Switch the wallet to the network the org lives on. |
+| `treasury insufficient for payroll` | Top up the treasury until `treasuryBalance >= totalPayroll`. |
+| `cooldown not elapsed` | Wait, or use Daml console to lower `payrollCooldownSeconds` for the demo. |
+| `failed to allocate party` | The JSON API URL for the active network is wrong / your participant isn't running. |
+| Employee logs in and sees nothing | Their party id was allocated against a different network. Switch the wallet to the network the org lives on. |
+| Spawn button stays disabled | Either the wallet isn't connected (right column → Connect wallet) or no JSON API URL is set for the active network. |
