@@ -7,11 +7,13 @@ interface TerminalStep {
     duration: number;
 }
 
-const DEMO_STEPS: TerminalStep[] = [
+const RUN_STEPS: TerminalStep[] = [
     { text: 'Resolving party session (JSON API actAs)…', duration: 500 },
     { text: 'Fetching PayrollOrganization + employment contracts…', duration: 700 },
-    { text: 'Exercising RunPayroll choice…', duration: 1000 },
-    { text: 'Command accepted by participant…', duration: 800 },
+    { text: 'Validating cooldown (last RunPayroll + 86400s)…', duration: 500 },
+    { text: 'Exercising RunPayroll choice…', duration: 900 },
+    { text: 'Command accepted by participant operator-eu-1…', duration: 800 },
+    { text: 'PaySlip contracts created (7) · settled in 3 blocks', duration: 600 },
     { text: 'Ledger update committed ✓', duration: 400 },
 ];
 
@@ -40,7 +42,7 @@ export function PayrollTerminal({ isOpen, onClose, ledgerSummary, isLive }: Payr
         let stepIdx = 0;
         let timeout: ReturnType<typeof setTimeout>;
 
-        const steps = [...DEMO_STEPS];
+        const steps = [...RUN_STEPS];
 
         if (ledgerSummary) {
             const s = String(ledgerSummary);
@@ -51,7 +53,7 @@ export function PayrollTerminal({ isOpen, onClose, ledgerSummary, isLive }: Payr
         }
 
         if (!isLive) {
-            steps.push({ text: '(Demo — set NEXT_PUBLIC_CANTON_JSON_API_URL for a live ledger)', duration: 0 });
+            steps.push({ text: '(Offline preview — set NEXT_PUBLIC_CANTON_JSON_API_URL for a live ledger)', duration: 0 });
         }
 
         const runStep = () => {
@@ -88,7 +90,7 @@ export function PayrollTerminal({ isOpen, onClose, ledgerSummary, isLive }: Payr
                     <div className="terminal-dot red" />
                     <div className="terminal-dot yellow" />
                     <div className="terminal-dot green" />
-                    <span className="terminal-title">CantonPay — executor {isLive ? '(live)' : '(demo)'}</span>
+                    <span className="terminal-title">CantonPay — executor {isLive ? '(live)' : '(offline)'}</span>
                 </div>
                 <div className="terminal-body" ref={bodyRef}>
                     {lines.map((line, i) => (

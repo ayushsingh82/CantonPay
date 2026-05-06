@@ -6,6 +6,7 @@ interface AddEmployeeModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (partyHintOrId: string, salary: string) => void;
+  /** Reserved for live-ledger callers (currently informational only). */
   isLive?: boolean;
 }
 
@@ -13,7 +14,6 @@ export function AddEmployeeModal({
   isOpen,
   onClose,
   onAdd,
-  isLive,
 }: AddEmployeeModalProps) {
   const [partyHint, setPartyHint] = useState("");
   const [salary, setSalary] = useState("");
@@ -60,13 +60,13 @@ export function AddEmployeeModal({
 
         <div className="modal-body">
           <div className="form-group">
-            <label className="form-label">Employee party (hint or full id)</label>
+            <label className="form-label">Employee name or party id</label>
             <input
               className="form-input"
               type="text"
               value={partyHint}
               onChange={(e) => setPartyHint(e.target.value)}
-              placeholder="Employee"
+              placeholder="e.g. Sasha Ivanova"
               spellCheck={false}
               disabled={isSubmitting}
             />
@@ -107,7 +107,7 @@ export function AddEmployeeModal({
             type="button"
             className="btn btn-primary"
             onClick={handleSubmit}
-            disabled={!isValid || isSubmitting || !isLive}
+            disabled={!isValid || isSubmitting}
           >
             {isSubmitting ? "Submitting…" : "Add employee"}
           </button>

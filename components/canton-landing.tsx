@@ -3,7 +3,15 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Loader2, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  Coins,
+  Layers,
+  Loader2,
+  ShieldCheck,
+  Sparkles,
+  Users,
+} from "lucide-react";
 import { useCantonAuth } from "@/contexts/canton-auth";
 import { allocateParty, createPayrollOrganization } from "@/lib/canton";
 import { WalletPanel } from "@/components/WalletPanel";
@@ -23,7 +31,7 @@ export function CantonLanding() {
   } = useCantonAuth();
 
   const [orgIdInput, setOrgIdInput] = useState("");
-  const [orgLabel, setOrgLabel] = useState("Acme Demo Co.");
+  const [orgLabel, setOrgLabel] = useState("Northwind Treasury Group");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -63,7 +71,7 @@ export function CantonLanding() {
         {
           employerParty: partyId,
           operatorParty,
-          orgLabel: orgLabel.trim() || "CantonPay Demo",
+          orgLabel: orgLabel.trim() || "CantonPay Org",
           currency: network.currency,
         },
         { apiUrl, networkId },
@@ -147,6 +155,116 @@ export function CantonLanding() {
             Canton Coin, run cooldown-protected batch payouts. Switch between
             local sandbox and Canton Coin DevNet without leaving the page.
           </p>
+
+          <div
+            style={{
+              display: "flex",
+              gap: 12,
+              marginTop: 36,
+              flexWrap: "wrap",
+              justifyContent: "center",
+            }}
+            className="animate-fade-up [animation-delay:320ms]"
+          >
+            <Link
+              href="/dashboard"
+              className="btn-primary inline-flex items-center font-mono font-semibold text-sm leading-7 px-6 py-3 rounded-lg"
+              style={{ gap: 8 }}
+            >
+              Open dashboard
+              <ArrowRight size={14} />
+            </Link>
+            <a
+              href="#open-org"
+              className="btn-ghost inline-flex items-center font-mono font-semibold text-sm leading-7 px-6 py-3 rounded-lg"
+              style={{ gap: 8 }}
+            >
+              Connect a real org
+            </a>
+          </div>
+
+          <div
+            className="animate-fade-up [animation-delay:400ms]"
+            style={{
+              marginTop: 56,
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: 16,
+              width: "100%",
+              maxWidth: 960,
+            }}
+          >
+            {[
+              {
+                icon: <Users size={18} />,
+                title: "Multi-party visibility",
+                body: "Daml signatories and observers control who sees salary fields on each EmploymentContract.",
+              },
+              {
+                icon: <Coins size={18} />,
+                title: "Treasury in Canton Coin",
+                body: "Fund the org once, then RunPayroll fans out PaySlip contracts to every active employee.",
+              },
+              {
+                icon: <ShieldCheck size={18} />,
+                title: "Cooldown enforced",
+                body: "Each org sets a payout cooldown (24h default) — re-runs are rejected on the ledger.",
+              },
+              {
+                icon: <Layers size={18} />,
+                title: "Sandbox or DevNet",
+                body: "Same UI against a local Canton sandbox or the public Canton Coin DevNet — switch in the navbar.",
+              },
+            ].map((f) => (
+              <div
+                key={f.title}
+                style={{
+                  textAlign: "left",
+                  padding: 18,
+                  background: "rgba(15,18,30,0.55)",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  borderRadius: 14,
+                  backdropFilter: "blur(10px)",
+                }}
+              >
+                <span
+                  style={{
+                    display: "inline-flex",
+                    width: 32,
+                    height: 32,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: 8,
+                    background: "rgba(73,136,196,0.14)",
+                    color: "#bde8f5",
+                    marginBottom: 10,
+                  }}
+                >
+                  {f.icon}
+                </span>
+                <div
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: "#bde8f5",
+                    marginBottom: 6,
+                  }}
+                >
+                  {f.title}
+                </div>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: 12,
+                    lineHeight: 1.55,
+                    color: "rgba(189,232,245,0.55)",
+                  }}
+                >
+                  {f.body}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -201,7 +319,7 @@ export function CantonLanding() {
           >
             Connect a wallet party, then either join an existing
             <code className="mono"> PayrollOrganization</code> contract or
-            spawn a fresh demo org on {network.shortLabel}.
+            spawn a fresh org on {network.shortLabel}.
           </p>
         </div>
 
@@ -302,7 +420,7 @@ export function CantonLanding() {
 
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <label className="form-label" style={{ fontSize: 11 }}>
-                Spawn a demo org · employer = active wallet party
+                Spawn a new org · employer = active wallet party
               </label>
               <input
                 className="form-input"
@@ -355,7 +473,7 @@ export function CantonLanding() {
                 ) : (
                   <>
                     <Sparkles size={14} />
-                    Spawn demo org on {network.shortLabel}
+                    Spawn org on {network.shortLabel}
                   </>
                 )}
               </button>
